@@ -17,5 +17,6 @@ extern const uint32_t communicationTimeout_ms;
 
 void UART0_RX_CB();
 void handleSerialInput();
+void handleCommand(String command, String argument);
 
 #endif // UART_UTILS_H

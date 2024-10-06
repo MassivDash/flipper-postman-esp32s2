@@ -15,7 +15,6 @@ AsyncUDP udp;
 
 void setup() {
   UART0.begin(115200);
-  Serial.begin(115200);
   while (!Serial) {
     ; // Wait for Serial to be ready
   }
@@ -34,16 +33,22 @@ void setup() {
   led_set_blue(0);
   UART0.onReceive(UART0_RX_CB);
 
-  // Print out the welcome message
-  // Command list
-  UART0.println("Flipper postman dev board firmware v0.1");
-  UART0.println("Available commands:");
-  UART0.println("SET ssid <ssid>");
-  UART0.println("SET password <password>");
-  UART0.println("ACTIVATE WIFI");
-  UART0.println("DISCONNECT");
-  UART0.println("GET <url>");
-  UART0.println("POST <url> <json_payload>");
+  // Print welcome message and available commands
+  UART0.println("========================================");
+  UART0.println("|                                      |");
+  UART0.println("|   Flipper Spaceout Dev Board v0.1    |");
+  UART0.println("|             Uart port                |");
+  UART0.println("|                                      |");
+  UART0.println("========================================");
+  UART0.println("|          Available Commands          |");
+  UART0.println("|--------------------------------------|");
+  UART0.println("| 1. SET ssid <ssid>                   |");
+  UART0.println("| 2. SET password <password>           |");
+  UART0.println("| 3. ACTIVATE WIFI                     |");
+  UART0.println("| 4. DISCONNECT WIFI                   |");
+  UART0.println("| 5. GET <url>                         |");
+  UART0.println("| 6. POST <url> <json_payload>         |");
+  UART0.println("========================================");
 }
 
 void loop() {

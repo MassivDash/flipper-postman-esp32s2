@@ -1,5 +1,6 @@
 #include "uart_utils.h"
 #include "http_utils.h"
+#include "led.h"
 #include "wifi_utils.h"
 
 String uart_buffer = "";
@@ -26,6 +27,62 @@ void UART0_RX_CB() {
 // DISCONNECT
 // GET <url>
 // POST <url> <json_payload>
+
+void handleCommand(String command, String argument) {
+  switch (command.c_str()[0]) {
+  case 'S':
+    if (command == "SET_SSID") {
+      UART0.println("setting SSID to: " + argument);
+      setSSID(argument);
+      led_set_green(255);
+      delay(1000);
+      led_set_green(0);
+    } else if (command == "SET_PASSWORD") {
+      setPassword(argument);
+      UART0.println("Setting SSID password to: " + argument);
+      led_set_green(255);
+      delay(1000);
+      led_set_green(0);
+    }
+    break;
+
+  case 'A':
+    if (command == "ACTIVATE_WIFI") {
+      connectToWiFi();
+    }
+    break;
+
+  case 'D':
+    if (command == "DISCONNECT_WIFI") {
+      disconnectFromWiFi();
+    }
+    break;
+
+  case 'G':
+    if (command == "GET") {
+      UART0.println("GET request to: " + argument);
+      makeHttpRequest(argument, nullptr);
+    }
+    break;
+
+  case 'P':
+    if (command == "POST") {
+      int jsonStartIndex = argument.indexOf(' ') + 1;
+      String url = argument.substring(0, jsonStartIndex - 1);
+      String jsonPayload = argument.substring(jsonStartIndex);
+      UART0.println("POST request to: " + url);
+      UART0.println("Payload: " + jsonPayload);
+      Serial.println("POST request to: " + url);
+      Serial.println("Payload: " + jsonPayload);
+      makeHttpPostRequest(url, jsonPayload, nullptr);
+    }
+    break;
+
+  default:
+    UART0.println("Unknown command");
+    break;
+  }
+}
 
 void handleSerialInput() {
   if (uart_buffer.length() > 0) {
@@ -55,52 +112,7 @@ void handleSerialInput() {
         command = "UNKNOWN";
       }
 
-      switch (command.c_str()[0]) {
-      case 'S':
-        if (command == "SET_SSID") {
-          setSSID(argument);
-          UART0.println("SSID set to: " + argument);
-        } else if (command == "SET_PASSWORD") {
-          setPassword(argument);
-          UART0.println("Password set to: " + argument);
-        }
-        disconnectFromWiFi();
-        break;
-
-      case 'A':
-        if (command == "ACTIVATE_WIFI") {
-          connectToWiFi();
-        }
-        break;
-
-      case 'D':
-        if (command == "DISCONNECT_WIFI") {
-          disconnectFromWiFi();
-        }
-        break;
-
-      case 'G':
-        if (command == "GET") {
-          UART0.println("GET request to: " + argument);
-          makeHttpRequest(argument, nullptr);
-        }
-        break;
-
-      case 'P':
-        if (command == "POST") {
-          int jsonStartIndex = argument.indexOf(' ') + 1;
-          String url = argument.substring(0, jsonStartIndex - 1);
-          String jsonPayload = argument.substring(jsonStartIndex);
-          UART0.println("POST request to: " + url);
-          UART0.println("Payload: " + jsonPayload);
-          makeHttpPostRequest(url, jsonPayload, nullptr);
-        }
-        break;
-
-      default:
-        UART0.println("Unknown command");
-        break;
-      }
+      handleCommand(command, argument);
 
       uart_buffer = "";
       xSemaphoreGive(uart_buffer_Mutex);

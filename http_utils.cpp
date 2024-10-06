@@ -4,17 +4,54 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 
+const int MAX_CONTENT_LENGTH = 512 * 1024;
+
+bool isContentLengthAcceptable(String url) {
+  HTTPClient http;
+  http.begin(url);
+  int httpResponseCode = http.sendRequest("HEAD");
+
+  if (httpResponseCode > 0) {
+    int contentLength = http.getSize();
+    UART0.println("Content Length: " + String(contentLength) +
+                  "<= " + String(MAX_CONTENT_LENGTH));
+
+    if (contentLength == -1) {
+      UART0.println(
+          "Warning: Content-Length is unknown. Proceeding with caution.");
+      return true; // Proceed with caution
+    }
+    http.end();
+    return contentLength <= MAX_CONTENT_LENGTH;
+  } else {
+    http.end();
+    return false;
+  }
+}
+
 void makeHttpRequest(String url, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
+    if (!isContentLengthAcceptable(url)) {
+      String errorMsg = "Content too large";
+      if (packet) {
+        packet->printf("%s", errorMsg.c_str());
+      } else {
+        UART0.println(errorMsg);
+      }
+      return;
+    }
+
     HTTPClient http;
     http.begin(url);
+
+    // Pre-allocate memory for the response String
+    String response;
 
     int httpResponseCode = http.GET();
 
     if (httpResponseCode > 0) {
       String payload = http.getString();
-      String response =
-          "HTTP Response code: " + String(httpResponseCode) + "\n";
+      response = "HTTP Response code: " + String(httpResponseCode) + "\n";
 
       if (isJson(payload)) {
         response += parseJson(payload);
@@ -56,16 +93,27 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
 void makeHttpPostRequest(String url, String jsonPayload,
                          AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
+    if (!isContentLengthAcceptable(url)) {
+      String errorMsg = "Content too large";
+      if (packet) {
+        packet->printf("%s", errorMsg.c_str());
+      } else {
+        UART0.println(errorMsg);
+      }
+      return;
+    }
+
     HTTPClient http;
     http.begin(url);
     http.addHeader("Content-Type", "application/json");
+
+    String response;
 
     int httpResponseCode = http.POST(jsonPayload);
 
     if (httpResponseCode > 0) {
       String payload = http.getString();
-      String response =
-          "HTTP Response code: " + String(httpResponseCode) + "\n";
+      response = "HTTP Response code: " + String(httpResponseCode) + "\n";
 
       if (isJson(payload)) {
         response += parseJson(payload);
