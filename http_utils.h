@@ -5,6 +5,8 @@
 #include <AsyncUDP.h>
 
 void makeHttpRequest(String url, AsyncUDPPacket *packet);
+void makeHttpPostRequest(String url, String jsonPayload,
+                         AsyncUDPPacket *packet);
 String getHttpErrorMessage(int httpCode);
 
 #endif // HTTP_UTILS_H

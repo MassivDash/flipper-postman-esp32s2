@@ -1,8 +1,8 @@
 #include "http_utils.h"
 #include "json_utils.h"
+#include "uart_utils.h"
 #include <HTTPClient.h>
 #include <WiFi.h>
-#include "uart_utils.h"
 
 void makeHttpRequest(String url, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
@@ -10,6 +10,57 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
     http.begin(url);
 
     int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      String payload = http.getString();
+      String response =
+          "HTTP Response code: " + String(httpResponseCode) + "\n";
+
+      if (isJson(payload)) {
+        response += parseJson(payload);
+        if (packet) {
+          packet->printf("%s", response.c_str());
+        } else {
+          UART0.println(response);
+        }
+      } else {
+        response += "Response is HTML. Printing content:\n\n";
+        if (packet) {
+          packet->printf("%s", response.c_str());
+        } else {
+          UART0.println(response);
+        }
+        printHtml(payload, packet);
+      }
+
+    } else {
+      String errorMsg = "HTTP Error: " + getHttpErrorMessage(httpResponseCode);
+      if (packet) {
+        packet->printf("%s", errorMsg.c_str());
+      } else {
+        UART0.println(errorMsg);
+      }
+    }
+
+    http.end();
+  } else {
+    String errorMsg = "WiFi Disconnected";
+    if (packet) {
+      packet->printf("%s", errorMsg.c_str());
+    } else {
+      UART0.println(errorMsg);
+    }
+  }
+}
+
+void makeHttpPostRequest(String url, String jsonPayload,
+                         AsyncUDPPacket *packet) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(url);
+    http.addHeader("Content-Type", "application/json");
+
+    int httpResponseCode = http.POST(jsonPayload);
 
     if (httpResponseCode > 0) {
       String payload = http.getString();
