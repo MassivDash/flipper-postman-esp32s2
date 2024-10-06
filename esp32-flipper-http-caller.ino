@@ -2,6 +2,7 @@
 #include <AsyncUDP.h>
 #include <HTTPClient.h>
 #include <WiFi.h>
+#include "led.h"
 
 // Use appropriate Serial definition
 #if ARDUINO_USB_CDC_ON_BOOT
@@ -144,6 +145,9 @@ void UART0_RX_CB() {
 void setup() {
   UART0.begin(115200);
 
+  led_init();
+  led_set_blue(255);
+
   uart_buffer_Mutex = xSemaphoreCreateMutex();
   if (uart_buffer_Mutex == NULL) {
     log_e("Error creating Mutex. Sketch will fail.");
@@ -162,9 +166,14 @@ void setup() {
     delay(1000);
     UART0.println("Connecting to WiFi...");
   }
+
+  led_set_blue(0);
+
+  led_set_green(255);
   UART0.println("Connected to WiFi");
   UART0.print("IP Address: ");
   UART0.println(WiFi.localIP());
+  led_set_green(0);
 
   if (udp.listen(1234)) {
     UART0.println("UDP Listening on Port: 1234");
