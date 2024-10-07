@@ -3,6 +3,38 @@
 #include "led.h"
 #include "wifi_utils.h"
 
+String ensureHttpsPrefix(String url) {
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return "https://" + url;
+  }
+  return url;
+}
+
+// Placeholder function declarations
+void placeholderCommand(String argument) {}
+
+// Declare the commands array with placeholder functions
+Command commands[] = {
+    {"SET_SSID", "SET ssid <ssid>", placeholderCommand},
+    {"SET_PASSWORD", "SET password <password>", placeholderCommand},
+    {"ACTIVATE_WIFI", "ACTIVATE_WIFI", placeholderCommand},
+    {"DISCONNECT_WIFI", "DISCONNECT_WIFI", placeholderCommand},
+    {"LIST_WIFI", "LIST_WIFI", placeholderCommand},
+    {"GET", "GET <url>", placeholderCommand},
+    {"GET_STREAM", "GET_STREAM <url>", placeholderCommand},
+    {"POST", "POST <url> <json_payload>", placeholderCommand},
+    {"BUILD_HTTP_METHOD", "BUILD_HTTP_METHOD <method>", placeholderCommand},
+    {"BUILD_HTTP_URL", "BUILD_HTTP_URL <url>", placeholderCommand},
+    {"BUILD_HTTP_HEADER", "BUILD_HTTP_HEADER <header>", placeholderCommand},
+    {"BUILD_HTTP_PAYLOAD", "BUILD_HTTP_PAYLOAD <payload>", placeholderCommand},
+    {"REMOVE_HTTP_HEADER", "REMOVE_HTTP_HEADER <header>", placeholderCommand},
+    {"RESET_HTTP_CONFIG", "RESET_HTTP_CONFIG", placeholderCommand},
+    {"BUILD_HTTP_SHOW_RESPONSE_HEADERS",
+     "BUILD_HTTP_SHOW_RESPONSE_HEADERS <true/false>", placeholderCommand},
+    {"EXECUTE_HTTP_CALL", "EXECUTE_HTTP_CALL", placeholderCommand},
+    {"CONNECT", "CONNECT <SSID> <password>", placeholderCommand},
+    {"?", "Help", placeholderCommand}};
+
 String uart_buffer = "";
 SemaphoreHandle_t uart_buffer_Mutex = NULL;
 const uint32_t communicationTimeout_ms = 500;
@@ -20,109 +52,102 @@ void UART0_RX_CB() {
   }
 }
 
-String ensureHttpsPrefix(String url) {
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    return "https://" + url;
-  }
-  return url;
+void setSSIDCommand(String argument) {
+  UART0.println("setting SSID to: " + argument);
+  setSSID(argument);
+  led_set_green(255);
+  delay(1000);
+  led_set_green(0);
 }
 
-// List of Commands
-// LIST WIFI
-// SET ssid <ssid>
-// SET password <password>
-// ACTIVATE WIFI
-// DISCONNECT WIFI
-// GET <url>
-// GET_STREAM <url>
-// POST <url> <json_payload>
+void setPasswordCommand(String argument) {
+  setPassword(argument);
+  UART0.println("Setting SSID password to: " + argument);
+  led_set_green(255);
+  delay(1000);
+  led_set_green(0);
+}
+
+void activateWiFiCommand(String argument) { connectToWiFi(); }
+
+void disconnectWiFiCommand(String argument) { disconnectFromWiFi(); }
+
+void listWiFiCommand(String argument) {
+  String list = listWiFiNetworks();
+  UART0.println("Available WiFi networks: " + list);
+}
+
+void getCommand(String argument) {
+  argument = ensureHttpsPrefix(argument);
+  UART0.println("GET request to: " + argument);
+  makeHttpRequest(argument, nullptr);
+}
+
+void getStreamCommand(String argument) {
+  argument = ensureHttpsPrefix(argument);
+  UART0.println("GET_STREAM request to: " + argument);
+  makeHttpRequestStream(argument, nullptr);
+}
+
+void postCommand(String argument) {
+  int jsonStartIndex = argument.indexOf(' ') + 1;
+  String url = argument.substring(0, jsonStartIndex - 1);
+  String jsonPayload = argument.substring(jsonStartIndex);
+  UART0.println("POST request to: " + url);
+  UART0.println("Payload: " + jsonPayload);
+  makeHttpPostRequest(url, jsonPayload, nullptr);
+}
+
+void buildHttpMethodCommand(String argument) { setHttpMethod(argument); }
+
+void buildHttpUrlCommand(String argument) { setHttpUrl(argument); }
+
+void buildHttpHeaderCommand(String argument) { addHttpHeader(argument); }
+
+void buildHttpPayloadCommand(String argument) { setHttpPayload(argument); }
+
+void removeHttpHeaderCommand(String argument) { removeHttpHeader(argument); }
+
+void resetHttpConfigCommand(String argument) { resetHttpConfig(); }
+
+void buildHttpShowResponseHeadersCommand(String argument) {
+  setShowResponseHeaders(argument.equalsIgnoreCase("true"));
+}
+
+void executeHttpCallCommand(String argument) { executeHttpCall(nullptr); }
+
+void connectCommand(String argument) {
+  int spaceIndex = argument.indexOf(' ');
+  if (spaceIndex != -1) {
+    String ssid = argument.substring(0, spaceIndex);
+    String password = argument.substring(spaceIndex + 1);
+    UART0.println("Setting SSID to: " + ssid);
+    setSSID(ssid);
+    UART0.println("Setting password to: " + password);
+    setPassword(password);
+    UART0.println("Connecting to WiFi...");
+    connectToWiFi();
+  } else {
+    UART0.println(
+        "Invalid CONNECT command format. Use: CONNECT {SSID} {password}");
+  }
+}
+
+void helpCommand(String argument) {
+  UART0.println("Available Commands:");
+  for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
+    UART0.println(commands[i].description);
+  }
+}
 
 void handleCommand(String command, String argument) {
-  switch (command.c_str()[0]) {
-  case 'S':
-    if (command == "SET_SSID") {
-      UART0.println("setting SSID to: " + argument);
-      setSSID(argument);
-      led_set_green(255);
-      delay(1000);
-      led_set_green(0);
-    } else if (command == "SET_PASSWORD") {
-      setPassword(argument);
-      UART0.println("Setting SSID password to: " + argument);
-      led_set_green(255);
-      delay(1000);
-      led_set_green(0);
+  for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
+    if (commands[i].name == command) {
+      commands[i].execute(argument);
+      return;
     }
-    break;
-
-  case 'A':
-    if (command == "ACTIVATE_WIFI") {
-      connectToWiFi();
-    }
-    break;
-
-  case 'D':
-    if (command == "DISCONNECT_WIFI") {
-      disconnectFromWiFi();
-    }
-    break;
-
-  case 'G':
-    if (command == "GET") {
-      argument = ensureHttpsPrefix(argument);
-      UART0.println("GET request to: " + argument);
-      makeHttpRequest(argument, nullptr);
-    }
-
-    if (command == "GET_STREAM") {
-      argument = ensureHttpsPrefix(argument);
-      UART0.println("GET_STREAM request to: " + argument);
-      makeHttpRequestStream(argument, nullptr);
-    }
-    break;
-
-  case 'L':
-    if (command == "LIST_WIFI") {
-      String list = listWiFiNetworks();
-      UART0.println("Available WiFi networks: " + list);
-    }
-
-  case 'P':
-    if (command == "POST") {
-      int jsonStartIndex = argument.indexOf(' ') + 1;
-      String url = argument.substring(0, jsonStartIndex - 1);
-      String jsonPayload = argument.substring(jsonStartIndex);
-      UART0.println("POST request to: " + url);
-      UART0.println("Payload: " + jsonPayload);
-      Serial.println("POST request to: " + url);
-      Serial.println("Payload: " + jsonPayload);
-      makeHttpPostRequest(url, jsonPayload, nullptr);
-    }
-    break;
-
-  case 'C':
-    if (command == "CONNECT") {
-      int spaceIndex = argument.indexOf(' ');
-      if (spaceIndex != -1) {
-        String ssid = argument.substring(0, spaceIndex);
-        String password = argument.substring(spaceIndex + 1);
-        UART0.println("Setting SSID to: " + ssid);
-        setSSID(ssid);
-        UART0.println("Setting password to: " + password);
-        setPassword(password);
-        UART0.println("Connecting to WiFi...");
-        connectToWiFi();
-      } else {
-        UART0.println(
-            "Invalid CONNECT command format. Use: CONNECT {SSID} {password}");
-      }
-    }
-    break;
-
-  default:
-    UART0.println("Unknown command");
-    break;
   }
+  UART0.println("Unknown command");
 }
 
 void handleSerialInput() {
@@ -133,32 +158,12 @@ void handleSerialInput() {
       String command;
       String argument;
 
-      if (uart_buffer.startsWith("SET ssid ")) {
-        command = "SET_SSID";
-        argument = uart_buffer.substring(9);
-      } else if (uart_buffer.startsWith("SET password ")) {
-        command = "SET_PASSWORD";
-        argument = uart_buffer.substring(13);
-      } else if (uart_buffer.startsWith("CONNECT ")) {
-        command = "CONNECT";
-        argument = uart_buffer.substring(8);
-      } else if (uart_buffer.equals("ACTIVATE WIFI")) {
-        command = "ACTIVATE_WIFI";
-      } else if (uart_buffer.equals("DISCONNECT WIFI")) {
-        command = "DISCONNECT_WIFI";
-      } else if (uart_buffer.equals("LIST WIFI")) {
-        command = "LIST_WIFI";
-      } else if (uart_buffer.startsWith("GET ")) {
-        command = "GET";
-        argument = uart_buffer.substring(4);
-      } else if (uart_buffer.startsWith("GET_STREAM ")) {
-        command = "GET_STREAM";
-        argument = uart_buffer.substring(11);
-      } else if (uart_buffer.startsWith("POST ")) {
-        command = "POST";
-        argument = uart_buffer.substring(5);
+      int spaceIndex = uart_buffer.indexOf(' ');
+      if (spaceIndex != -1) {
+        command = uart_buffer.substring(0, spaceIndex);
+        argument = uart_buffer.substring(spaceIndex + 1);
       } else {
-        command = "UNKNOWN";
+        command = uart_buffer;
       }
 
       handleCommand(command, argument);
@@ -167,4 +172,33 @@ void handleSerialInput() {
       xSemaphoreGive(uart_buffer_Mutex);
     }
   }
+}
+
+// Assign the actual functions to the commands array
+void initializeCommands() {
+  commands[0].execute = setSSIDCommand;
+  commands[1].execute = setPasswordCommand;
+  commands[2].execute = activateWiFiCommand;
+  commands[3].execute = disconnectWiFiCommand;
+  commands[4].execute = listWiFiCommand;
+  commands[5].execute = getCommand;
+  commands[6].execute = getStreamCommand;
+  commands[7].execute = postCommand;
+  commands[8].execute = buildHttpMethodCommand;
+  commands[9].execute = buildHttpUrlCommand;
+  commands[10].execute = buildHttpHeaderCommand;
+  commands[11].execute = buildHttpPayloadCommand;
+  commands[12].execute = removeHttpHeaderCommand;
+  commands[13].execute = resetHttpConfigCommand;
+  commands[14].execute = buildHttpShowResponseHeadersCommand;
+  commands[15].execute = executeHttpCallCommand;
+  commands[16].execute = connectCommand;
+  commands[17].execute = helpCommand;
+}
+
+// Call initializeCommands() in your setup function or main function
+void init_cmds() {
+  uart_buffer_Mutex = xSemaphoreCreateMutex();
+  initializeCommands();
+  // Other setup code...
 }

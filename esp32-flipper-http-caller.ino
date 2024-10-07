@@ -32,6 +32,7 @@ void setup() {
   }
   led_set_blue(0);
   UART0.onReceive(UART0_RX_CB);
+  init_cmds();
 
   // Print welcome message and available commands
   UART0.println("========================================");
