@@ -51,6 +51,14 @@ void setShowResponseHeaders(bool show) {
 }
 
 void setHttpMethod(String method) {
+
+  if (method != "GET" && method != "POST" && method != "PATCH" &&
+      method != "PUT" && method != "DELETE" && method != "HEAD") {
+    UART0.println("Invalid HTTP method. Supported methods: GET, POST, PATCH, "
+                  "PUT, DELETE, HEAD");
+    return;
+  }
+
   httpCallConfig.method = method;
   UART0.println("HTTP Method set to: " + method);
 }
@@ -135,6 +143,10 @@ void executeHttpCall(AsyncUDPPacket *packet) {
       httpResponseCode = http.PATCH(httpCallConfig.payload);
     } else if (httpCallConfig.method == "PUT") {
       httpResponseCode = http.PUT(httpCallConfig.payload);
+    } else if (httpCallConfig.method == "DELETE") {
+      httpResponseCode = http.DELETE(httpCallConfig.payload);
+    } else if (httpCallConfig.method == "HEAD") {
+      httpResponseCode = http.sendRequest("HEAD");
     } else {
       String errorMsg = "Unsupported HTTP method: " + httpCallConfig.method;
       printResponse(errorMsg, packet);
