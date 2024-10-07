@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           ~/arduino-cli/bin/arduino-cli lib install ArduinoJson
-          ~/arduino-cli/bin/arduino-cli lib install AsyncUDP
+          ~/arduino-cli/bin/arduino-cli lib install "ESP Async UDP"
           ~/arduino-cli/bin/arduino-cli lib install HTTPClient
 
       - name: Compile sketch
