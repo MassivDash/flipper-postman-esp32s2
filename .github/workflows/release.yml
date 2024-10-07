@@ -1,0 +1,57 @@
+name: Build and Release Arduino Project
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Arduino CLI
+        run: |
+          mkdir -p ~/arduino-cli
+          cd ~/arduino-cli
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+
+      - name: Install ESP32 core
+        run: |
+          ~/arduino-cli/bin/arduino-cli core update-index
+          ~/arduino-cli/bin/arduino-cli core install esp32:esp32
+
+      - name: Install dependencies
+        run: |
+          ~/arduino-cli/bin/arduino-cli lib install ArduinoJson
+          ~/arduino-cli/bin/arduino-cli lib install AsyncUDP
+          ~/arduino-cli/bin/arduino-cli lib install HTTPClient
+
+      - name: Compile sketch
+        run: |
+          ~/arduino-cli/bin/arduino-cli compile --fqbn esp32:esp32:esp32s2 ./flipper-postman-esp32s2.ino
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v1.0.0
+          release_name: Release v1.0.0
+          draft: false
+          prerelease: false
+
+      - name: Upload binaries
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/esp32.esp32.esp32s2/flipper-postman-esp32s2.ino.bin
+          asset_name: flipper-postman-esp32s2.ino.bin
+          asset_content_type: application/octet-stream
