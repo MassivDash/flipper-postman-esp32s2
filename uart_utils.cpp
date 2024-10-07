@@ -20,6 +20,13 @@ void UART0_RX_CB() {
   }
 }
 
+String ensureHttpsPrefix(String url) {
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return "https://" + url;
+  }
+  return url;
+}
+
 // List of Commands
 // LIST WIFI
 // SET ssid <ssid>
@@ -62,11 +69,13 @@ void handleCommand(String command, String argument) {
 
   case 'G':
     if (command == "GET") {
+      argument = ensureHttpsPrefix(argument);
       UART0.println("GET request to: " + argument);
       makeHttpRequest(argument, nullptr);
     }
 
     if (command == "GET_STREAM") {
+      argument = ensureHttpsPrefix(argument);
       UART0.println("GET_STREAM request to: " + argument);
       makeHttpRequestStream(argument, nullptr);
     }
