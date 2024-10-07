@@ -28,12 +28,11 @@ jobs:
       - name: Install dependencies
         run: |
           ~/arduino-cli/bin/arduino-cli lib install ArduinoJson
-          ~/arduino-cli/bin/arduino-cli lib install "ESP Async UDP"
           ~/arduino-cli/bin/arduino-cli lib install HTTPClient
 
       - name: Compile sketch
         run: |
-          ~/arduino-cli/bin/arduino-cli compile --fqbn esp32:esp32:esp32s2 ./flipper-postman-esp32s2.ino
+          ~/arduino-cli/bin/arduino-cli compile --fqbn esp32:esp32:esp32s2 --libraries ./libraries ./flipper-postman-esp32s2.ino
 
       - name: Create release
         id: create_release
