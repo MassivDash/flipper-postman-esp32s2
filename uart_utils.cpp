@@ -35,7 +35,8 @@ Command commands[] = {
      placeholderCommand},
     {"EXECUTE_HTTP_CALL", "EXECUTE_HTTP_CALL", placeholderCommand},
     {"CONNECT", "CONNECT <SSID> <password>", placeholderCommand},
-    {"?", "Help", placeholderCommand}};
+    {"?", "type ? to print help", placeholderCommand},
+    {"HELP", "HELP", placeholderCommand}};
 
 String uart_buffer = "";
 SemaphoreHandle_t uart_buffer_Mutex = NULL;
@@ -208,6 +209,7 @@ void initializeCommands() {
   commands[16].execute = executeHttpCallCommand;
   commands[17].execute = connectCommand;
   commands[18].execute = helpCommand;
+  commands[19].execute = helpCommand;
 }
 
 // Call initializeCommands() in your setup function or main function
