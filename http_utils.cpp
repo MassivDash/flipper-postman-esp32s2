@@ -38,6 +38,9 @@ void led_error() {
 }
 
 void printResponse(String response, AsyncUDPPacket *packet) {
+  if (response.isEmpty()) {
+    response = "No response body";
+  }
   if (packet) {
     packet->printf("%s", response.c_str());
   } else {
@@ -47,7 +50,8 @@ void printResponse(String response, AsyncUDPPacket *packet) {
 
 void setShowResponseHeaders(bool show) {
   httpCallConfig.showResponseHeaders = show;
-  UART0.println("Show response headers set to: " + String(show));
+  UART0.println("Show response headers set to: " +
+                String(show ? "true" : "false"));
 }
 
 void setHttpMethod(String method) {
@@ -126,15 +130,23 @@ void executeHttpCall(AsyncUDPPacket *packet) {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
     led_set_blue(255);
+    HTTPClient http;
     http.begin(httpCallConfig.url);
 
     for (const auto &header : httpCallConfig.headers) {
       http.addHeader(header.first, header.second);
     }
 
+    // Collect common headers
+    const char *headerKeys[] = {"Content-Type", "Content-Length", "Connection",
+                                "Date", "Server"};
+    size_t headerKeysCount = sizeof(headerKeys) / sizeof(headerKeys[0]);
+    http.collectHeaders(headerKeys, headerKeysCount);
+
+    String response;
     int httpResponseCode;
+
     if (httpCallConfig.method == "GET") {
       httpResponseCode = http.GET();
     } else if (httpCallConfig.method == "POST") {
@@ -144,7 +156,7 @@ void executeHttpCall(AsyncUDPPacket *packet) {
     } else if (httpCallConfig.method == "PUT") {
       httpResponseCode = http.PUT(httpCallConfig.payload);
     } else if (httpCallConfig.method == "DELETE") {
-      httpResponseCode = http.DELETE(httpCallConfig.payload);
+      httpResponseCode = http.sendRequest("DELETE", httpCallConfig.payload);
     } else if (httpCallConfig.method == "HEAD") {
       httpResponseCode = http.sendRequest("HEAD");
     } else {
@@ -155,12 +167,15 @@ void executeHttpCall(AsyncUDPPacket *packet) {
       return;
     }
 
-    String response = "HTTP Response code: " + String(httpResponseCode) + "\n";
-    printResponse(response, packet);
-
     if (httpResponseCode > 0) {
+      response = "HTTP Response code: " + String(httpResponseCode) + "\n";
+
       if (httpCallConfig.showResponseHeaders) {
+        UART0.println("Response headers:");
+        // Get the header count
         int headerCount = http.headers();
+
+        // Iterate over the collected headers and print them
         for (int i = 0; i < headerCount; i++) {
           String headerName = http.headerName(i);
           String headerValue = http.header(i);
@@ -168,8 +183,29 @@ void executeHttpCall(AsyncUDPPacket *packet) {
         }
       }
 
-      String payload = http.getString();
-      printResponse(payload, packet);
+      printResponse(response, packet);
+
+      UART0.println("Response body:");
+      WiFiClient *stream = http.getStreamPtr();
+      if (stream) {
+        uint8_t buff[128] = {0};
+        while (stream->available()) {
+          size_t size = stream->available();
+          if (size) {
+            int c = stream->readBytes(
+                buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+            if (packet) {
+              packet->write(buff, c);
+            } else {
+              UART0.write(buff, c);
+            }
+          }
+          delay(1); // Yield control to the system
+        }
+      } else {
+        String payload = "No response body";
+        printResponse(payload, packet);
+      }
     } else {
       String errorMsg = "HTTP Error: " + getHttpErrorMessage(httpResponseCode);
       printResponse(errorMsg, packet);
@@ -183,11 +219,10 @@ void executeHttpCall(AsyncUDPPacket *packet) {
     printResponse(errorMsg, packet);
   }
 }
-
 void makeHttpRequest(String url, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
     if (!isContentLengthAcceptable(url)) {
-      String errorMsg = "Content too large";
+      String errorMsg = "HTTP Error: Content too large";
       printResponse(errorMsg, packet);
       return;
     }
@@ -202,6 +237,10 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
     if (httpResponseCode > 0) {
       String payload = http.getString();
       response = "HTTP Response code: " + String(httpResponseCode) + "\n";
+
+      if (payload.isEmpty()) {
+        payload = "No response body";
+      }
 
       if (isJson(payload)) {
         response += parseJson(payload);
