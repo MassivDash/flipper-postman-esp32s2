@@ -9,5 +9,6 @@ void setPassword(String password);
 void disconnectFromWiFi();
 const char *getSSID();
 const char *getPassword();
+String listWiFiNetworks();
 
 #endif // WIFI_UTILS_H

@@ -9,6 +9,15 @@ static String password;
 extern AsyncUDP udp;
 
 void connectToWiFi() {
+  if (ssid.isEmpty()) {
+    UART0.println("Error: SSID is missing");
+    return;
+  }
+
+  if (password.isEmpty()) {
+    UART0.println("Error: Password is missing");
+    return;
+  }
   led_set_blue(255);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), password.c_str());
@@ -51,6 +60,9 @@ void connectToWiFi() {
       } else if (receivedData.startsWith("GET ")) {
         command = "GET";
         argument = receivedData.substring(4);
+      } else if (receivedData.startsWith("GET_STREAM")) {
+        command = "GET_STREAM";
+        argument = receivedData.substring(10);
       } else if (receivedData.startsWith("POST ")) {
         command = "POST";
         argument = receivedData.substring(5);
@@ -68,12 +80,26 @@ void connectToWiFi() {
     });
   }
 
-  UART0.println("Send 'GET url' via Serial or UDP to make an HTTP request");
+  UART0.println("The WiFi Connection is established, you can now send GET, "
+                "GET_STREAM and POST commands"
+                "to the device");
 }
 
 void disconnectFromWiFi() {
   WiFi.disconnect();
   UART0.println("WiFi disconnected");
+}
+
+String listWiFiNetworks() {
+  int n = WiFi.scanNetworks();
+  String result = "";
+  for (int i = 0; i < n; ++i) {
+    result += WiFi.SSID(i);
+    if (i < n - 1) {
+      result += ", ";
+    }
+  }
+  return result;
 }
 
 void setSSID(String newSSID) { ssid = newSSID; }

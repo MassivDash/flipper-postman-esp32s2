@@ -1,5 +1,6 @@
 #include "http_utils.h"
 #include "json_utils.h"
+#include "led.h"
 #include "uart_utils.h"
 #include <HTTPClient.h>
 #include <WiFi.h>
@@ -17,8 +18,8 @@ bool isContentLengthAcceptable(String url) {
                   "<= " + String(MAX_CONTENT_LENGTH));
 
     if (contentLength == -1) {
-      UART0.println(
-          "Warning: Content-Length is unknown. Proceeding with caution.");
+      UART0.println("Warning: Content-Length is unknown. Proceeding with "
+                    "caution. On no response restart the board");
       return true; // Proceed with caution
     }
     http.end();
@@ -42,6 +43,7 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
     }
 
     HTTPClient http;
+    led_set_blue(255);
     http.begin(url);
 
     // Pre-allocate memory for the response String
@@ -61,7 +63,6 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
           UART0.println(response);
         }
       } else {
-        response += "Response is HTML. Printing content:\n\n";
         if (packet) {
           packet->printf("%s", response.c_str());
         } else {
@@ -80,6 +81,64 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
     }
 
     http.end();
+    led_set_blue(0);
+  } else {
+    String errorMsg = "WiFi Disconnected";
+    if (packet) {
+      packet->printf("%s", errorMsg.c_str());
+    } else {
+      UART0.println(errorMsg);
+    }
+  }
+}
+
+void makeHttpRequestStream(String url, AsyncUDPPacket *packet) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    led_set_blue(255);
+    http.begin(url);
+
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      WiFiClient *stream = http.getStreamPtr();
+      String response =
+          "HTTP Response code: " + String(httpResponseCode) + "\n";
+      if (packet) {
+        packet->printf("%s", response.c_str());
+      } else {
+        UART0.println(response);
+      }
+
+      uint8_t buff[128] = {0};
+
+      while (stream->available()) {
+        size_t size = stream->available();
+        if (size) {
+          int c = stream->readBytes(
+              buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+          if (packet) {
+            packet->write(buff, c);
+          } else {
+            UART0.write(buff, c);
+          }
+        }
+        delay(1); // Yield control to the system
+      }
+
+    } else {
+      String errorMsg =
+          "HTTP Error: " + HTTPClient::errorToString(httpResponseCode) +
+          " (Code: " + String(httpResponseCode) + ")";
+      if (packet) {
+        packet->printf("%s", errorMsg.c_str());
+      } else {
+        UART0.println(errorMsg);
+      }
+    }
+
+    http.end();
+    led_set_blue(0);
   } else {
     String errorMsg = "WiFi Disconnected";
     if (packet) {

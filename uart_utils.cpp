@@ -21,11 +21,13 @@ void UART0_RX_CB() {
 }
 
 // List of Commands
+// LIST WIFI
 // SET ssid <ssid>
 // SET password <password>
-// ACTIVATE
-// DISCONNECT
+// ACTIVATE WIFI
+// DISCONNECT WIFI
 // GET <url>
+// GET_STREAM <url>
 // POST <url> <json_payload>
 
 void handleCommand(String command, String argument) {
@@ -63,7 +65,18 @@ void handleCommand(String command, String argument) {
       UART0.println("GET request to: " + argument);
       makeHttpRequest(argument, nullptr);
     }
+
+    if (command == "GET_STREAM") {
+      UART0.println("GET_STREAM request to: " + argument);
+      makeHttpRequestStream(argument, nullptr);
+    }
     break;
+
+  case 'L':
+    if (command == "LIST_WIFI") {
+      String list = listWiFiNetworks();
+      UART0.println("Available WiFi networks: " + list);
+    }
 
   case 'P':
     if (command == "POST") {
@@ -75,6 +88,25 @@ void handleCommand(String command, String argument) {
       Serial.println("POST request to: " + url);
       Serial.println("Payload: " + jsonPayload);
       makeHttpPostRequest(url, jsonPayload, nullptr);
+    }
+    break;
+
+  case 'C':
+    if (command == "CONNECT") {
+      int spaceIndex = argument.indexOf(' ');
+      if (spaceIndex != -1) {
+        String ssid = argument.substring(0, spaceIndex);
+        String password = argument.substring(spaceIndex + 1);
+        UART0.println("Setting SSID to: " + ssid);
+        setSSID(ssid);
+        UART0.println("Setting password to: " + password);
+        setPassword(password);
+        UART0.println("Connecting to WiFi...");
+        connectToWiFi();
+      } else {
+        UART0.println(
+            "Invalid CONNECT command format. Use: CONNECT {SSID} {password}");
+      }
     }
     break;
 
@@ -98,13 +130,21 @@ void handleSerialInput() {
       } else if (uart_buffer.startsWith("SET password ")) {
         command = "SET_PASSWORD";
         argument = uart_buffer.substring(13);
+      } else if (uart_buffer.startsWith("CONNECT ")) {
+        command = "CONNECT";
+        argument = uart_buffer.substring(8);
       } else if (uart_buffer.equals("ACTIVATE WIFI")) {
         command = "ACTIVATE_WIFI";
       } else if (uart_buffer.equals("DISCONNECT WIFI")) {
         command = "DISCONNECT_WIFI";
+      } else if (uart_buffer.equals("LIST WIFI")) {
+        command = "LIST_WIFI";
       } else if (uart_buffer.startsWith("GET ")) {
         command = "GET";
         argument = uart_buffer.substring(4);
+      } else if (uart_buffer.startsWith("GET_STREAM ")) {
+        command = "GET_STREAM";
+        argument = uart_buffer.substring(11);
       } else if (uart_buffer.startsWith("POST ")) {
         command = "POST";
         argument = uart_buffer.substring(5);

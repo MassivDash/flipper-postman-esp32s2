@@ -44,10 +44,13 @@ void setup() {
   UART0.println("|--------------------------------------|");
   UART0.println("| 1. SET ssid <ssid>                   |");
   UART0.println("| 2. SET password <password>           |");
-  UART0.println("| 3. ACTIVATE WIFI                     |");
-  UART0.println("| 4. DISCONNECT WIFI                   |");
-  UART0.println("| 5. GET <url>                         |");
-  UART0.println("| 6. POST <url> <json_payload>         |");
+  UART0.println("| 2. CONNECT <ssid> <password>         |");
+  UART0.println("| 4. ACTIVATE WIFI                     |");
+  UART0.println("| 5. DISCONNECT WIFI                   |");
+  UART0.println("| 6. LIST WIFI                         |");
+  UART0.println("| 7. GET <url>                         |");
+  UART0.println("| 8. GET_STREAM <url>                  |");
+  UART0.println("| 9. POST <url> <json_payload>         |");
   UART0.println("========================================");
 }
 
