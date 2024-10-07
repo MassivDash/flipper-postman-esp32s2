@@ -116,8 +116,10 @@ bool isContentLengthAcceptable(String url) {
                   "<= " + String(MAX_CONTENT_LENGTH));
 
     if (contentLength == -1) {
-      UART0.println("WARNING: Content-Length is unknown. Proceeding with "
-                    "caution. On no response restart the board");
+      UART0.println(
+          "WARNING: Content-Length is unknown. Those error out often and the "
+          "board needs to be reset. Try the GET_STREAM method instead.");
+      http.end();
       return true; // Proceed with caution
     }
     http.end();
