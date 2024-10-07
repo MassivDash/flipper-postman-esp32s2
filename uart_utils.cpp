@@ -31,6 +31,8 @@ Command commands[] = {
     {"RESET_HTTP_CONFIG", "RESET_HTTP_CONFIG", placeholderCommand},
     {"BUILD_HTTP_SHOW_RESPONSE_HEADERS",
      "BUILD_HTTP_SHOW_RESPONSE_HEADERS <true/false>", placeholderCommand},
+    {"BUILD_HTTP_IMPLEMENTATION", "BUILD_HTTP_IMPLEMENTATION <STREAM/CALL>",
+     placeholderCommand},
     {"EXECUTE_HTTP_CALL", "EXECUTE_HTTP_CALL", placeholderCommand},
     {"CONNECT", "CONNECT <SSID> <password>", placeholderCommand},
     {"?", "Help", placeholderCommand}};
@@ -109,6 +111,17 @@ void buildHttpPayloadCommand(String argument) { setHttpPayload(argument); }
 void removeHttpHeaderCommand(String argument) { removeHttpHeader(argument); }
 
 void resetHttpConfigCommand(String argument) { resetHttpConfig(); }
+
+void buildHttpImplementationCommand(String argument) {
+  // Check if argument is a valid string of either STREAM or CALL;
+  // if not, print an error message
+  if (argument != "STREAM" && argument != "CALL") {
+    UART0.println("Invalid HTTP implementation. Supported implementations: "
+                  "STREAM, CALL");
+    return;
+  }
+  setHttpImplementation(argument);
+}
 
 void buildHttpShowResponseHeadersCommand(String argument) {
   setShowResponseHeaders(argument.equalsIgnoreCase("true"));
@@ -191,9 +204,10 @@ void initializeCommands() {
   commands[12].execute = removeHttpHeaderCommand;
   commands[13].execute = resetHttpConfigCommand;
   commands[14].execute = buildHttpShowResponseHeadersCommand;
-  commands[15].execute = executeHttpCallCommand;
-  commands[16].execute = connectCommand;
-  commands[17].execute = helpCommand;
+  commands[15].execute = buildHttpImplementationCommand;
+  commands[16].execute = executeHttpCallCommand;
+  commands[17].execute = connectCommand;
+  commands[18].execute = helpCommand;
 }
 
 // Call initializeCommands() in your setup function or main function
