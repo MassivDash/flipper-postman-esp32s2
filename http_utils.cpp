@@ -42,7 +42,7 @@ void led_error() {
 
 void printResponse(String response, AsyncUDPPacket *packet) {
   if (response.isEmpty()) {
-    response = "No response body";
+    response = "empty";
   }
   if (packet) {
     packet->printf("%s", response.c_str());
@@ -53,15 +53,17 @@ void printResponse(String response, AsyncUDPPacket *packet) {
 
 void setShowResponseHeaders(bool show) {
   httpCallConfig.showResponseHeaders = show;
-  UART0.println("Show response headers set to: " +
-                String(show ? "true" : "false"));
+  UART0.println(
+      "HTTP_BUILDER_SHOW_RESPONSE_HEADERS: Show response headers set to: " +
+      String(show ? "true" : "false"));
 }
 
 void setHttpMethod(String method) {
   if (method != "GET" && method != "POST" && method != "PATCH" &&
       method != "PUT" && method != "DELETE" && method != "HEAD") {
-    UART0.println("Invalid HTTP method. Supported methods: GET, POST, PATCH, "
-                  "PUT, DELETE, HEAD");
+    UART0.println(
+        "HTTP_ERROR: Invalid HTTP method. Supported methods: GET, POST, PATCH, "
+        "PUT, DELETE, HEAD");
     return;
   }
 

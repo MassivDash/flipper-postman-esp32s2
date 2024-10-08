@@ -8,66 +8,65 @@ static String ssid;
 static String password;
 extern AsyncUDP udp;
 
+const int MAX_RETRY_COUNT = 10; // Maximum number of retries
+const int RETRY_DELAY_MS = 1000;
+
 void connectToWiFi() {
   if (ssid.isEmpty()) {
-    UART0.println("Error: SSID is missing");
+    UART0.println("WIFI_ERROR: SSID is missing");
     return;
   }
 
   if (password.isEmpty()) {
-    UART0.println("Error: Password is missing");
+    UART0.println("WIFI_ERROR: Password is missing");
     return;
   }
   led_set_blue(255);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), password.c_str());
+  int retryCount = 0;
   led_set_blue(0);
 
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED && retryCount < MAX_RETRY_COUNT) {
     led_set_blue(255);
-    delay(1000);
-    UART0.println("Connecting to WiFi...");
+    delay(RETRY_DELAY_MS);
+    retryCount++;
+    UART0.println("WIFI_CONNECT: Connecting to WiFi... try " +
+                  String(retryCount) + "/" + String(MAX_RETRY_COUNT));
+
     led_set_blue(0);
+
+    // Check for specific WiFi statuses
+    if (WiFi.status() == WL_CONNECT_FAILED) {
+      UART0.println("WIFI_ERROR: Failed to connect to WiFi: Incorrect password "
+                    "or other issue.");
+      break;
+    }
   }
 
   led_set_blue(0);
   led_set_green(255);
-  UART0.println("Connected to WiFi");
-  UART0.print("IP Address: ");
+  UART0.println("WIFI_CONNECTED: Connected to " + ssid);
+  UART0.print("WIFI_INFO: IP Address: ");
   UART0.println(WiFi.localIP());
   led_set_green(0);
 
   if (udp.listen(1234)) {
-    UART0.println("UDP Listening on Port: 1234");
+    UART0.println("WIFI_INFO: UDP listening on port 1234");
 
     udp.onPacket([](AsyncUDPPacket packet) {
       String receivedData = String((char *)packet.data(), packet.length());
-      UART0.println("Received UDP: " + receivedData);
+      UART0.println("WIFI_INFO: Received UDP: " + receivedData);
 
       String command;
       String argument;
 
-      if (receivedData.startsWith("SET ssid ")) {
-        command = "SET_SSID";
-        argument = receivedData.substring(9);
-      } else if (receivedData.startsWith("SET password ")) {
-        command = "SET_PASSWORD";
-        argument = receivedData.substring(13);
-      } else if (receivedData.equals("ACTIVATE WIFI")) {
-        command = "ACTIVATE_WIFI";
-      } else if (receivedData.equals("DISCONNECT WIFI")) {
-        command = "DISCONNECT_WIFI";
-      } else if (receivedData.startsWith("GET ")) {
-        command = "GET";
-        argument = receivedData.substring(4);
-      } else if (receivedData.startsWith("GET_STREAM")) {
-        command = "GET_STREAM";
-        argument = receivedData.substring(10);
-      } else if (receivedData.startsWith("POST ")) {
-        command = "POST";
-        argument = receivedData.substring(5);
+      int spaceIndex = receivedData.indexOf(' ');
+      if (spaceIndex != -1) {
+        command = receivedData.substring(0, spaceIndex);
+        argument = receivedData.substring(spaceIndex + 1);
       } else {
-        command = "UNKNOWN";
+        command = receivedData;
       }
 
       handleCommand(command, argument);
