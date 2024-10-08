@@ -32,64 +32,24 @@ You can also send custom messages to the flipper, type MESSAGE: <your text> for 
 
 ## Flipper Zero Uart Terminal
 
-<video src="https://flipper.spaceout.pl/demo-board-flipper.mp4"></video>
+![Flipper UART Terminal](./docs/flipper-uart-terminal.gif);
 
 ## Installation (Build from source)
 
 0. Git clone the project
-1. Install Arduino IDE
+1. Install [Arduino IDE](https://www.arduino.cc/en/software)
 2. Arduino IDE -> Settings (Preferences)
 
 Copy and paste the `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
 
 3. Wait for installation
-4. Arduino IDE -> Tools -> Manage Libraries -> find and install ArduinoJson
-5. Arduino IDE -> Tools -> Boards -> Board manager -> find and install esp32 by expersif systems
-6. Arduino IDE -> Select other board and port -> find and select ESP32S2 Dev Module
-7. Arduino IDE -> Verify build
-8. Connect board to usb
-9. Boot board into bootloader mode (hold boot, and while holding the boot press the reset and release, then release boot button)
-10. Arduino IDE -> Tools -> port -> select the port from your card (it should say esp32s2)
-11. Arduino Ide --> Upload
-
-After flashing the firmware reset the board, remove the usb cable and inject board into flipper.
-You can switch on flipper GPIO -> UART Bridge (pins 13,14) --> plug into your usb cable, the port should now be open to to the board you can use minicom or arduino Serial Monitor to execute commands
-
-## Installation via [esp flasher](https://github.com/0xchocolate/flipperzero-esp-flasher);
-
-1. Download the files from the [release page](https://github.com/MassivDash/flipper-postman-esp32s2/releases)
-2. Unplug your WiFi Dev Board and connect your Flipper Zero to your computer.
-3. Copy the files into `sd_card/apps_data/esp_flasher/`
-4. Open the ESP Flasher app on your Flipper. It should be located under `Apps -> GPIO` from the main menu. If not, download it from the Flipper App Store.
-5. In the ESP Flasher app, select the following options:
-   - "Reset Board": wait a few seconds, then go back.
-   - "Enter Bootloader": wait until the 'waiting for download' message appears, then go back.
-6. Click on Manual Flash.
-7. Click on Bootloader and select the `flipper-postman-esp32s2.ino.bootloader.bin`.
-8. Click on Part Table and select the `flipper-postman-esp32s2.ino.partitions.bin`.
-9. Click on FirmwareA and select the `flipper-postman-esp32s2.ino.bin`.
-10. Click on FLASH - slow. Wait for the green blinks
-11. On the Dev Board, press the RESET button once.
-
-## General Usage
-
-The calls can be made directly via [UART Terminal Application](https://github.com/cool4uma/UART_Terminal). You can also connect flipper to your computer via usb cable then enter GPIO and enable the UART-USB Bridge to communicate directly to board via Arduino IDE Serial Monitor or [minicom](https://wiki.emacinc.com/wiki/Getting_Started_With_Minicom) cmd line program
-
-1. Set the SSID and password for the WiFi connection using the `SET_SSID` and `SET_PASSWORD` commands.
-2. Activate the WiFi connection using the `ACTIVATE_WIFI` command.
-3. Use the `GET`, `POST`, or `GET_STREAM` commands to make HTTP requests.
-4. Build custom HTTP requests using the `BUILD_HTTP_*` commands.
-5. Execute custom HTTP requests using the `EXECUTE_HTTP_CALL` command.
-6. Use the `?` or `HELP` commands to print help information.
-
-## Example
-
-```plaintext
-SET_SSID MyWiFiNetwork
-SET_PASSWORD MyWiFiPassword
-ACTIVATE_WIFI
-GET https://api.example.com/data
-```
+4. Arduino IDE -> Tools -> Manage Libraries -> find [UART Terminal Application](https://github.com/cool4uma/UART_Terminal). You can also connect flipper to your computer via usb cable then enter GPIO and enable the UART-USB Bridge to communicate directly to board via Arduino IDE Serial Monitor or [minicom](https://wiki.emacinc.com/wiki/Getting_Started_With_Minicom) cmd line program
+5. Set the SSID and password for the WiFi connection using the `SET_SSID` and `SET_PASSWORD` commands.
+6. Activate the WiFi connection using the `ACTIVATE_WIFI` command.
+7. Use the `GET`, `POST`, or `GET_STREAM` commands to make HTTP requests.
+8. Build custom HTTP requests using the `BUILD_HTTP_*` commands.
+9. Execute custom HTTP requests using the `EXECUTE_HTTP_CALL` command.
+10. Use the `?` or `HELP` commands to print help information.
 
 ## SERIAL API Documentation
 
@@ -146,6 +106,22 @@ To make an HTTP POST request with a JSON payload:
 POST https://api.example.com/data {"key":"value"}
 ```
 
+## HTTP Builder
+
+The firmware holds a http config you can manipulate and then execute the call.
+Check the flags in the table above.
+
+#### Show response headers
+
+HTTP builder if set for showing headers will only transmit the headers from this list `"Content-Type", "Content-Length", "Connection",
+                                "Date", "Server"`
+
+#### Simple Build call
+
+BUILD_HTTP_METHOD HEAD
+BUILD_HTTP_URL https://api.com/
+EXECUTE_HTTP_CALL
+
 #### Receiving Responses
 
 When you send a `GET_STREAM` command, you will receive the following responses:
@@ -169,3 +145,5 @@ WIFI_LIST: Available WiFi networks: <list>
 - Website crawls will print html only on smaller websites.
 - You should be able to stream files and images to flipper via stream (untested)
 - Simple get call will make a head call first and determine the possible size of the content, that will not always be possible, if the content length is unknown, firmware will choose safer stream method
+
+Author: SpaceGhost @ spaceout.pl
