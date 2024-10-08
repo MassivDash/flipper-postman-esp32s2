@@ -44,6 +44,12 @@ void connectToWiFi() {
     }
   }
 
+  if (WiFi.status() != WL_CONNECTED) {
+    led_error();
+    UART0.println("WIFI_ERROR: Failed to connect to WiFi");
+    return;
+  }
+
   led_set_blue(0);
   led_set_green(255);
   UART0.println("WIFI_CONNECTED: Connected to " + ssid);
@@ -69,7 +75,7 @@ void connectToWiFi() {
         command = receivedData;
       }
 
-      handleCommand(command, argument);
+      handleCommand(command, argument, &packet);
 
       if (command == "GET" || command == "POST") {
         packet.printf("Command executed: %s", receivedData.c_str());

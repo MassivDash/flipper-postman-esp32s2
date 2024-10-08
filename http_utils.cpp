@@ -51,61 +51,63 @@ void printResponse(String response, AsyncUDPPacket *packet) {
   }
 }
 
-void setShowResponseHeaders(bool show) {
+void setShowResponseHeaders(bool show, AsyncUDPPacket *packet) {
   httpCallConfig.showResponseHeaders = show;
-  UART0.println(
+  printResponse(
       "HTTP_BUILDER_SHOW_RESPONSE_HEADERS: Show response headers set to: " +
-      String(show ? "true" : "false"));
+          String(show ? "true" : "false"),
+      packet);
 }
 
-void setHttpMethod(String method) {
+void setHttpMethod(String method, AsyncUDPPacket *packet) {
   if (method != "GET" && method != "POST" && method != "PATCH" &&
       method != "PUT" && method != "DELETE" && method != "HEAD") {
-    UART0.println(
-        "HTTP_ERROR: Invalid HTTP method. Supported methods: GET, POST, PATCH, "
-        "PUT, DELETE, HEAD");
+    printResponse("HTTP_ERROR: Invalid HTTP method. Supported methods: GET, "
+                  "POST, PATCH, PUT, DELETE, HEAD",
+                  packet);
     return;
   }
 
   httpCallConfig.method = method;
-  UART0.println("HTTP_SET_METHOD: " + method);
+  printResponse("HTTP_SET_METHOD: " + method, packet);
 }
 
-void setHttpUrl(String url) {
+void setHttpUrl(String url, AsyncUDPPacket *packet) {
   httpCallConfig.url = ensureHttpsPrefix(url);
-  UART0.println("HTTP URL set to: " + httpCallConfig.url);
+  printResponse("HTTP URL set to: " + httpCallConfig.url, packet);
 }
 
-void addHttpHeader(String header) {
+void addHttpHeader(String header, AsyncUDPPacket *packet) {
   int separatorIndex = header.indexOf(':');
   if (separatorIndex != -1) {
     String name = header.substring(0, separatorIndex);
     String value = header.substring(separatorIndex + 1);
     httpCallConfig.headers.push_back(std::make_pair(name, value));
-    UART0.println("HTTP_ADD_HEADER: " + name + ": " + value);
+    printResponse("HTTP_ADD_HEADER: " + name + ": " + value, packet);
   } else {
-    UART0.println("HTTP_ERROR: Invalid header format, use HEADER name:value");
+    printResponse("HTTP_ERROR: Invalid header format, use HEADER name:value",
+                  packet);
   }
 }
 
-void removeHttpHeader(String name) {
+void removeHttpHeader(String name, AsyncUDPPacket *packet) {
   httpCallConfig.removeHeader(name);
-  UART0.println("HTTP_REMOVE_HEADER: " + name);
+  printResponse("HTTP_REMOVE_HEADER: " + name, packet);
 }
 
-void resetHttpConfig() {
+void resetHttpConfig(AsyncUDPPacket *packet) {
   httpCallConfig.reset();
-  UART0.println("HTTP_CONFIG_REST: All configurations reset");
+  printResponse("HTTP_CONFIG_REST: All configurations reset", packet);
 }
 
-void setHttpPayload(String payload) {
+void setHttpPayload(String payload, AsyncUDPPacket *packet) {
   httpCallConfig.payload = payload;
-  UART0.println("HTTP_SET_PAYLOAD: " + payload);
+  printResponse("HTTP_SET_PAYLOAD: " + payload, packet);
 }
 
-void setHttpImplementation(String implementation) {
+void setHttpImplementation(String implementation, AsyncUDPPacket *packet) {
   httpCallConfig.implementation = implementation;
-  UART0.println("HTTP_SET_IMPLEMENTATION: " + implementation);
+  printResponse("HTTP_SET_IMPLEMENTATION: " + implementation, packet);
 }
 
 int getContentLength(String url) {
@@ -170,8 +172,9 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
     int contentLength = getContentLength(url);
 
     if (contentLength > MAX_CONTENT_LENGTH) {
-      String warnMsg = "WARNING: Content of " + contentLength +
-                       " exceeds maximum length of " + MAX_CONTENT_LENGTH +
+      String warnMsg = "WARNING: Content of " + String(contentLength) +
+                       " exceeds maximum length of " +
+                       String(MAX_CONTENT_LENGTH) +
                        " bytes for simple calls. Using stream,  if"
                        "the blue light stays on, reset the board.";
       printResponse(warnMsg, packet);
@@ -195,9 +198,11 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
       printResponse(response, packet);
 
       if (contentLength == -1 || contentLength > MAX_CONTENT_LENGTH) {
-        UART0.println("STREAM:") handleStreamResponse(http, packet);
+        printResponse("STREAM:", packet);
+        handleStreamResponse(http, packet);
       } else {
-        UART0.println("RESPONSE:") handleGetStringResponse(http, packet);
+        printResponse("RESPONSE:", packet);
+        handleGetStringResponse(http, packet);
       }
     } else {
       String errorMsg = "HTTP_ERROR: " + getHttpErrorMessage(httpResponseCode);
@@ -221,13 +226,13 @@ void makeHttpRequestStream(String url, AsyncUDPPacket *packet) {
     int contentLength = getContentLength(url);
 
     if (contentLength > MAX_CONTENT_LENGTH) {
-      String warnMsg = "WARNING: Content of " + contentLength +
+      String warnMsg = "WARNING: Content of " + String(contentLength) +
                        " exceeds maximum length for stream of." +
-                       MAX_CONTENT_LENGTH +
-                       " bytes. If
-                       the blue light stays on,
-             reset the board.";
-             printResponse(warnMsg, packet);
+                       String(MAX_CONTENT_LENGTH) +
+                       " bytes. If"
+                       "the blue light stays on,"
+                       "reset the board.";
+      printResponse(warnMsg, packet);
     }
 
     if (contentLength == -1) {
@@ -335,7 +340,7 @@ void executeHttpCall(AsyncUDPPacket *packet) {
       response = "STATUS: " + String(httpResponseCode) + "\n";
 
       if (httpCallConfig.showResponseHeaders) {
-        UART0.println("HEADERS:");
+        printResponse("HEADERS:", packet);
         // Get the header count
         int headerCount = http.headers();
 
@@ -343,7 +348,7 @@ void executeHttpCall(AsyncUDPPacket *packet) {
         for (int i = 0; i < headerCount; i++) {
           String headerName = http.headerName(i);
           String headerValue = http.header(i);
-          UART0.println(headerName + ": " + headerValue);
+          printResponse(headerName + ": " + headerValue, packet);
         }
       }
 

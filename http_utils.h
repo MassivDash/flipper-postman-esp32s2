@@ -14,20 +14,18 @@ void makeHttpPostRequest(String url, String jsonPayload,
                          AsyncUDPPacket *packet);
 
 // HTTP configuration functions
-void setHttpMethod(String method);
-void setHttpUrl(String url);
-void addHttpHeader(String header);
-void setHttpPayload(String payload);
-void setHttpImplementation(String implementation);
-void removeHttpHeader(String name);
-void resetHttpConfig();
+void setHttpMethod(String method, AsyncUDPPacket *packet);
+void setHttpUrl(String url, AsyncUDPPacket *packet);
+void addHttpHeader(String header, AsyncUDPPacket *packet);
+void setHttpPayload(String payload, AsyncUDPPacket *packet);
+void setHttpImplementation(String implementation, AsyncUDPPacket *packet);
+void removeHttpHeader(String name, AsyncUDPPacket *packet);
+void resetHttpConfig(AsyncUDPPacket *packet);
 void executeHttpCall(AsyncUDPPacket *packet);
 
 // HTTP Helper functions
-void setShowResponseHeaders(bool show);
+void setShowResponseHeaders(bool show, AsyncUDPPacket *packet);
 String getHttpErrorMessage(int httpCode);
-bool isJson(String payload);
-String parseJson(String payload);
-void printHtml(String payload, AsyncUDPPacket *packet);
+void printResponse(String response, AsyncUDPPacket *packet);
 
 #endif // HTTP_UTILS_H

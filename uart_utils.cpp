@@ -2,6 +2,7 @@
 #include "http_utils.h"
 #include "led.h"
 #include "wifi_utils.h"
+#include <AsyncUDP.h>
 
 String ensureHttpsPrefix(String url) {
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -11,7 +12,7 @@ String ensureHttpsPrefix(String url) {
 }
 
 // Placeholder function declarations
-void placeholderCommand(String argument) {}
+void placeholderCommand(String argument, AsyncUDPPacket *packet) {}
 
 // Declare the commands array with placeholder functions
 Command commands[] = {
@@ -55,113 +56,134 @@ void UART0_RX_CB() {
   }
 }
 
-void setSSIDCommand(String argument) {
-  UART0.println("setting SSID to: " + argument);
+void setSSIDCommand(String argument, AsyncUDPPacket *packet) {
+  printResponse("setting SSID to: " + argument, packet);
   setSSID(argument);
   led_set_green(255);
   delay(1000);
   led_set_green(0);
 }
 
-void setPasswordCommand(String argument) {
+void setPasswordCommand(String argument, AsyncUDPPacket *packet) {
   setPassword(argument);
-  UART0.println("Setting SSID password to: " + argument);
+  printResponse("WIFI_PASSWORD: Setting SSID password to " + argument, packet);
   led_set_green(255);
   delay(1000);
   led_set_green(0);
 }
 
-void activateWiFiCommand(String argument) { connectToWiFi(); }
+void activateWiFiCommand(String argument, AsyncUDPPacket *packet) {
+  connectToWiFi();
+}
 
-void disconnectWiFiCommand(String argument) { disconnectFromWiFi(); }
+void disconnectWiFiCommand(String argument, AsyncUDPPacket *packet) {
+  disconnectFromWiFi();
+}
 
-void listWiFiCommand(String argument) {
+void listWiFiCommand(String argument, AsyncUDPPacket *packet) {
   String list = listWiFiNetworks();
-  UART0.println("Available WiFi networks: " + list);
+  printResponse("Available WiFi networks: " + list, packet);
 }
 
-void getCommand(String argument) {
+void getCommand(String argument, AsyncUDPPacket *packet) {
   argument = ensureHttpsPrefix(argument);
-  UART0.println("GET request to: " + argument);
-  makeHttpRequest(argument, nullptr);
+  printResponse("GET request to: " + argument, packet);
+  makeHttpRequest(argument, packet);
 }
 
-void getStreamCommand(String argument) {
+void getStreamCommand(String argument, AsyncUDPPacket *packet) {
   argument = ensureHttpsPrefix(argument);
-  UART0.println("GET_STREAM request to: " + argument);
-  makeHttpRequestStream(argument, nullptr);
+  printResponse("GET_STREAM request to: " + argument, packet);
+  makeHttpRequestStream(argument, packet);
 }
 
-void postCommand(String argument) {
+void postCommand(String argument, AsyncUDPPacket *packet) {
   int jsonStartIndex = argument.indexOf(' ') + 1;
   String url = argument.substring(0, jsonStartIndex - 1);
   String jsonPayload = argument.substring(jsonStartIndex);
-  UART0.println("POST request to: " + url);
-  UART0.println("Payload: " + jsonPayload);
-  makeHttpPostRequest(url, jsonPayload, nullptr);
+  printResponse("POST request to: " + url, packet);
+  printResponse("Payload: " + jsonPayload, packet);
+  makeHttpPostRequest(url, jsonPayload, packet);
 }
 
-void buildHttpMethodCommand(String argument) { setHttpMethod(argument); }
+void buildHttpMethodCommand(String argument, AsyncUDPPacket *packet) {
+  setHttpMethod(argument, packet);
+}
 
-void buildHttpUrlCommand(String argument) { setHttpUrl(argument); }
+void buildHttpUrlCommand(String argument, AsyncUDPPacket *packet) {
+  setHttpUrl(argument, packet);
+}
 
-void buildHttpHeaderCommand(String argument) { addHttpHeader(argument); }
+void buildHttpHeaderCommand(String argument, AsyncUDPPacket *packet) {
+  addHttpHeader(argument, packet);
+}
 
-void buildHttpPayloadCommand(String argument) { setHttpPayload(argument); }
+void buildHttpPayloadCommand(String argument, AsyncUDPPacket *packet) {
+  setHttpPayload(argument, packet);
+}
 
-void removeHttpHeaderCommand(String argument) { removeHttpHeader(argument); }
+void removeHttpHeaderCommand(String argument, AsyncUDPPacket *packet) {
+  removeHttpHeader(argument, packet);
+}
 
-void resetHttpConfigCommand(String argument) { resetHttpConfig(); }
+void resetHttpConfigCommand(String argument, AsyncUDPPacket *packet) {
+  resetHttpConfig(packet);
+}
 
-void buildHttpImplementationCommand(String argument) {
+void buildHttpImplementationCommand(String argument, AsyncUDPPacket *packet) {
   // Check if argument is a valid string of either STREAM or CALL;
   // if not, print an error message
   if (argument != "STREAM" && argument != "CALL") {
-    UART0.println("Invalid HTTP implementation. Supported implementations: "
-                  "STREAM, CALL");
+    printResponse("Invalid HTTP implementation. Supported implementations: "
+                  "STREAM, CALL",
+                  packet);
     return;
   }
-  setHttpImplementation(argument);
+  setHttpImplementation(argument, packet);
 }
 
-void buildHttpShowResponseHeadersCommand(String argument) {
-  setShowResponseHeaders(argument.equalsIgnoreCase("true"));
+void buildHttpShowResponseHeadersCommand(String argument,
+                                         AsyncUDPPacket *packet) {
+  setShowResponseHeaders(argument.equalsIgnoreCase("true"), packet);
 }
 
-void executeHttpCallCommand(String argument) { executeHttpCall(nullptr); }
+void executeHttpCallCommand(String argument, AsyncUDPPacket *packet) {
+  executeHttpCall(packet);
+}
 
-void connectCommand(String argument) {
+void connectCommand(String argument, AsyncUDPPacket *packet) {
   int spaceIndex = argument.indexOf(' ');
   if (spaceIndex != -1) {
     String ssid = argument.substring(0, spaceIndex);
     String password = argument.substring(spaceIndex + 1);
-    UART0.println("Setting SSID to: " + ssid);
+    printResponse("Setting SSID to: " + ssid, packet);
     setSSID(ssid);
-    UART0.println("Setting password to: " + password);
+    printResponse("Setting password to: " + password, packet);
     setPassword(password);
-    UART0.println("Connecting to WiFi...");
+    printResponse("Connecting to WiFi...", packet);
     connectToWiFi();
   } else {
-    UART0.println(
-        "Invalid CONNECT command format. Use: CONNECT {SSID} {password}");
+    printResponse(
+        "Invalid CONNECT command format. Use: CONNECT {SSID} {password}",
+        packet);
   }
 }
 
-void helpCommand(String argument) {
-  UART0.println("Available Commands:");
+void helpCommand(String argument, AsyncUDPPacket *packet) {
+  printResponse("Available Commands:", packet);
   for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
-    UART0.println(commands[i].description);
+    printResponse(commands[i].description, packet);
   }
 }
 
-void handleCommand(String command, String argument) {
+void handleCommand(String command, String argument, AsyncUDPPacket *packet) {
   for (int i = 0; i < sizeof(commands) / sizeof(commands[0]); i++) {
     if (commands[i].name == command) {
-      commands[i].execute(argument);
+      commands[i].execute(argument, packet);
       return;
     }
   }
-  UART0.println("Unknown command");
+  printResponse("Unknown command", packet);
 }
 
 void handleSerialInput() {
@@ -180,7 +202,7 @@ void handleSerialInput() {
         command = uart_buffer;
       }
 
-      handleCommand(command, argument);
+      handleCommand(command, argument, nullptr);
 
       uart_buffer = "";
       xSemaphoreGive(uart_buffer_Mutex);

@@ -1,5 +1,4 @@
 #include "http_utils.h"
-#include "json_utils.h"
 #include "led.h"
 #include "splash.h"
 #include "uart_utils.h"
