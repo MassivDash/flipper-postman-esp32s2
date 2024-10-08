@@ -117,7 +117,8 @@ void disconnectFromWiFi() {
 // CMD WIFI_LIST: List available WiFi networks
 String listWiFiNetworks() {
   UART0.println("WIFI_LIST: Scanning WiFi networks...");
-  led_set_blue(255) int n = WiFi.scanNetworks();
+  led_set_blue(255);
+  int n = WiFi.scanNetworks();
   String result = "";
   for (int i = 0; i < n; ++i) {
     result += WiFi.SSID(i);
