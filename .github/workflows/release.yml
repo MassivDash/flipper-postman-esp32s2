@@ -45,8 +45,7 @@ jobs:
           files: binaries/*
           draft: false
           prerelease: false
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          generate_release_notes: true
           body: |
             This is the release for version ${{ github.ref }}.
             It contains the compiled binaries for the ESP32-S2 Flipper Dev Board.
