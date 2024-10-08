@@ -38,21 +38,15 @@ jobs:
           mkdir -p ./binaries
           ~/arduino-cli/bin/arduino-cli compile --fqbn esp32:esp32:esp32s2 --libraries ./libraries --output-dir ./binaries ./flipper-postman-esp32s2.ino
 
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          files: binaries/*
           draft: false
           prerelease: false
-
-      - name: Upload binaries
-        uses: actions/upload-artifact@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          name: ${{ github.ref_name }}
-          path: ./binaries
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+            This is the release for version ${{ github.ref }}.
+            It contains the compiled binaries for the ESP32-S2 Flipper Dev Board.
