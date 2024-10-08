@@ -50,20 +50,9 @@ jobs:
           prerelease: false
 
       - name: Upload binaries
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-artifact@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./binaries/flipper-postman-esp32s2.ino.bin
-          asset_name: flipper-postman-esp32s2.ino.bin
-          asset_content_type: application/octet-stream
-
-      - name: Upload additional files
-        run: |
-          for file in ./binaries/*; do
-            if [ -f "$file" ]; then
-              echo "Uploading $file"
-              gh release upload ${{ github.ref_name }} "$file"
-            fi
-          done
+          name: ${{ github.ref_name }}
+          path: ./binaries
