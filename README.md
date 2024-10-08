@@ -1,10 +1,10 @@
 # Flipper Postman Board Software for esp32S2 (Flipper Dev Board)
 
-# ESP32 Flipper Postman Board v0.1
-
 ## Project Information
 
-This project is designed to work with the Flipper Postman Board. It provides various functionalities to interact with WiFi networks and make HTTP requests.
+This project is designed to work with the Flipper Dev Board (ESP32S2). It provides various functionalities to interact with WiFi networks and make HTTP requests.
+
+![Flipper Dev Board](./docs/schematics.webp)
 
 ## General Features
 
@@ -41,7 +41,7 @@ You can switch on flipper GPIO -> UART Bridge (pins 13,14) --> plug into your us
 
 ## Installation via esp flasher;
 
-1. Download the files from the release
+1. Download the files from the [release page](https://github.com/MassivDash/flipper-postman-esp32s2/releases)
 2. Unplug your WiFi Dev Board and connect your Flipper Zero to your computer.
 3. Copy the files into `sd_card/apps_data/esp_flasher/`
 4. Open the ESP Flasher app on your Flipper. It should be located under `Apps -> GPIO` from the main menu. If not, download it from the Flipper App Store.

@@ -1,6 +1,8 @@
 #include "http_utils.h"
 #include "led.h"
 #include "uart_utils.h"
+#include <HTTPClient.h>
+#include <WiFi.h>
 
 const int MAX_CONTENT_LENGTH = 512 * 1024;
 
@@ -56,7 +58,6 @@ void setShowResponseHeaders(bool show) {
 }
 
 void setHttpMethod(String method) {
-
   if (method != "GET" && method != "POST" && method != "PATCH" &&
       method != "PUT" && method != "DELETE" && method != "HEAD") {
     UART0.println("Invalid HTTP method. Supported methods: GET, POST, PATCH, "
@@ -65,7 +66,7 @@ void setHttpMethod(String method) {
   }
 
   httpCallConfig.method = method;
-  UART0.println("HTTP Method set to: " + method);
+  UART0.println("HTTP_SET_METHOD: " + method);
 }
 
 void setHttpUrl(String url) {
@@ -79,54 +80,207 @@ void addHttpHeader(String header) {
     String name = header.substring(0, separatorIndex);
     String value = header.substring(separatorIndex + 1);
     httpCallConfig.headers.push_back(std::make_pair(name, value));
-    UART0.println("Added header: " + name + ": " + value);
+    UART0.println("HTTP_ADD_HEADER: " + name + ": " + value);
   } else {
-    UART0.println("Invalid header format. Use: HEADER name:value");
+    UART0.println("HTTP_ERROR: Invalid header format, use HEADER name:value");
   }
 }
 
 void removeHttpHeader(String name) {
   httpCallConfig.removeHeader(name);
-  UART0.println("Removed header: " + name);
+  UART0.println("HTTP_REMOVE_HEADER: " + name);
 }
 
 void resetHttpConfig() {
   httpCallConfig.reset();
-  UART0.println("HTTP configuration reset");
+  UART0.println("HTTP_CONFIG_REST: All configurations reset");
 }
 
 void setHttpPayload(String payload) {
   httpCallConfig.payload = payload;
-  UART0.println("HTTP Payload set to: " + payload);
+  UART0.println("HTTP_SET_PAYLOAD: " + payload);
 }
 
 void setHttpImplementation(String implementation) {
   httpCallConfig.implementation = implementation;
-  UART0.println("HTTP Implementation set to: " + implementation);
+  UART0.println("HTTP_SET_IMPLEMENTATION: " + implementation);
 }
 
-bool isContentLengthAcceptable(String url) {
+int getContentLength(String url) {
   HTTPClient http;
   http.begin(url);
   int httpResponseCode = http.sendRequest("HEAD");
 
   if (httpResponseCode > 0) {
     int contentLength = http.getSize();
-    UART0.println("Content Length: " + String(contentLength) +
-                  "<= " + String(MAX_CONTENT_LENGTH));
-
-    if (contentLength == -1) {
-      UART0.println(
-          "WARNING: Content-Length is unknown. Those error out often and the "
-          "board needs to be reset. Try the GET_STREAM method instead.");
-      http.end();
-      return true; // Proceed with caution
-    }
     http.end();
-    return contentLength <= MAX_CONTENT_LENGTH;
+    return contentLength;
   } else {
     http.end();
-    return false;
+    return -1; // Indicate an error
+  }
+}
+
+void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
+  WiFiClient *stream = http.getStreamPtr();
+  if (stream) {
+    uint8_t buff[128] = {0};
+    uint16_t packetNumber = 0;
+    while (stream->available()) {
+      size_t size = stream->available();
+      if (size) {
+        int c = stream->readBytes(
+            buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+        buff[c] = '\0'; // Ensure null-termination
+        String chunk = String((char *)buff);
+        if (!chunk.toInt()) { // Check if chunk is not a number
+          String packetData = String(packetNumber) + ":" + chunk;
+          if (packet) {
+            packet->write((uint8_t *)packetData.c_str(), packetData.length());
+          } else {
+            UART0.write((uint8_t *)packetData.c_str(), packetData.length());
+          }
+          packetNumber++;
+        }
+      }
+      delay(1); // Yield control to the system
+    }
+    // Clear the buffer
+    memset(buff, 0, sizeof(buff));
+    // Set stream pointer to nullptr
+    stream = nullptr;
+  } else {
+    String payload = "empty";
+    printResponse(payload, packet);
+  }
+}
+
+void handleGetStringResponse(HTTPClient &http, AsyncUDPPacket *packet) {
+  String payload = http.getString();
+  if (payload.isEmpty()) {
+    payload = "empty";
+  }
+  printResponse(payload, packet);
+}
+
+void makeHttpRequest(String url, AsyncUDPPacket *packet) {
+  if (WiFi.status() == WL_CONNECTED) {
+    int contentLength = getContentLength(url);
+
+    if (contentLength > MAX_CONTENT_LENGTH) {
+      String warnMsg = "WARNING: Content of " + contentLength +
+                       " exceeds maximum length of " + MAX_CONTENT_LENGTH +
+                       " bytes for simple calls. Using stream,  if"
+                       "the blue light stays on, reset the board.";
+      printResponse(warnMsg, packet);
+    }
+
+    if (contentLength == -1) {
+      String warnMsg =
+          "WARNING: Content-Length is unknown (-1). These calls tend to crash "
+          "to board. If the blue light stays on, reset the board.";
+      printResponse(warnMsg, packet);
+    }
+
+    HTTPClient http;
+    led_set_blue(255);
+    http.begin(url);
+
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      String response = "STATUS: " + String(httpResponseCode) + "\n";
+      printResponse(response, packet);
+
+      if (contentLength == -1 || contentLength > MAX_CONTENT_LENGTH) {
+        UART0.println("STREAM:") handleStreamResponse(http, packet);
+      } else {
+        UART0.println("RESPONSE:") handleGetStringResponse(http, packet);
+      }
+    } else {
+      String errorMsg = "HTTP_ERROR: " + getHttpErrorMessage(httpResponseCode);
+      printResponse(errorMsg, packet);
+    }
+
+    http.end();
+    led_set_blue(0);
+  } else {
+    String errorMsg = "HTTP_ERROR: WiFi Disconnected";
+    printResponse(errorMsg, packet);
+  }
+}
+
+void makeHttpRequestStream(String url, AsyncUDPPacket *packet) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    led_set_blue(255);
+    http.begin(url);
+
+    int contentLength = getContentLength(url);
+
+    if (contentLength > MAX_CONTENT_LENGTH) {
+      String warnMsg = "WARNING: Content of " + contentLength +
+                       " exceeds maximum length for stream of." +
+                       MAX_CONTENT_LENGTH +
+                       " bytes. If
+                       the blue light stays on,
+             reset the board.";
+             printResponse(warnMsg, packet);
+    }
+
+    if (contentLength == -1) {
+      String warnMsg =
+          "WARNING: Content-Length is unknown (-1). These calls tend to crash "
+          "to board. If the blue light stays on, reset the board.";
+      printResponse(warnMsg, packet);
+    }
+
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      String response = "STATUS: " + String(httpResponseCode) + "\n";
+      printResponse(response, packet);
+      handleStreamResponse(http, packet);
+    } else {
+      String errorMsg =
+          "HTTP_ERROR: " + HTTPClient::errorToString(httpResponseCode) +
+          " (Code: " + String(httpResponseCode) + ")";
+      printResponse(errorMsg, packet);
+    }
+
+    http.end();
+    led_set_blue(0);
+  } else {
+    String errorMsg = "HTTP_ERROR: WiFi Disconnected";
+    printResponse(errorMsg, packet);
+  }
+}
+
+void makeHttpPostRequest(String url, String jsonPayload,
+                         AsyncUDPPacket *packet) {
+  if (WiFi.status() == WL_CONNECTED) {
+
+    HTTPClient http;
+    http.begin(url);
+    http.addHeader("Content-Type", "application/json");
+
+    int httpResponseCode = http.POST(jsonPayload);
+
+    if (httpResponseCode > 0) {
+      String response = "STATUS: " + String(httpResponseCode) + "\n";
+      printResponse(response, packet);
+      handleGetStringResponse(http, packet);
+    } else {
+      String errorMsg = "HTTP_ERROR: " + getHttpErrorMessage(httpResponseCode);
+      printResponse(errorMsg, packet);
+      led_error();
+    }
+
+    http.end();
+  } else {
+    String errorMsg = "HTTP_ERROR: WiFi Disconnected";
+    printResponse(errorMsg, packet);
+    led_error();
   }
 }
 
@@ -192,43 +346,10 @@ void executeHttpCall(AsyncUDPPacket *packet) {
       }
 
       printResponse(response, packet);
-
       if (httpCallConfig.implementation == "STREAM") {
-        UART0.println("STREAM:");
-        WiFiClient *stream = http.getStreamPtr();
-        if (stream) {
-          uint8_t buff[128] = {0};
-          while (stream->available()) {
-            size_t size = stream->available();
-            if (size) {
-              int c = stream->readBytes(
-                  buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
-              String chunk = String((char *)buff).substring(0, c);
-              if (!chunk.toInt()) { // Check if chunk is not a number
-                if (packet) {
-                  packet->write((uint8_t *)chunk.c_str(), chunk.length());
-                } else {
-                  UART0.write((uint8_t *)chunk.c_str(), chunk.length());
-                }
-              }
-            }
-            delay(1); // Yield control to the system
-          }
-          // Clear the buffer
-          memset(buff, 0, sizeof(buff));
-          // Set stream pointer to nullptr
-          stream = nullptr;
-        } else {
-          String payload = "No response body";
-          printResponse(payload, packet);
-        }
+        handleStreamResponse(http, packet);
       } else {
-        UART0.println("RESPONSE:");
-        String payload = http.getString();
-        if (payload.isEmpty()) {
-          payload = "No response body";
-        }
-        printResponse(payload, packet);
+        handleGetStringResponse(http, packet);
       }
     } else {
       String errorMsg = "HTTP_ERROR: " + getHttpErrorMessage(httpResponseCode);
@@ -242,145 +363,6 @@ void executeHttpCall(AsyncUDPPacket *packet) {
   } else {
     String errorMsg = "HTTP_ERROR: WiFi Disconnected";
     printResponse(errorMsg, packet);
-  }
-}
-
-void makeHttpRequest(String url, AsyncUDPPacket *packet) {
-  if (WiFi.status() == WL_CONNECTED) {
-    if (!isContentLengthAcceptable(url)) {
-      String errorMsg = "HTTP_ERROR: Content too large";
-      printResponse(errorMsg, packet);
-      return;
-    }
-
-    HTTPClient http;
-    led_set_blue(255);
-    http.begin(url);
-
-    String response;
-    int httpResponseCode = http.GET();
-
-    if (httpResponseCode > 0) {
-      String payload = http.getString();
-      response = "STATUS: " + String(httpResponseCode) + "\n";
-
-      if (payload.isEmpty()) {
-        payload = "No response body";
-      }
-
-      if (isJson(payload)) {
-        response += parseJson(payload);
-        printResponse(response, packet);
-      } else {
-        printResponse(response, packet);
-        printHtml(payload, packet);
-      }
-    } else {
-      String errorMsg = "HTTP_ERROR: " + getHttpErrorMessage(httpResponseCode);
-      printResponse(errorMsg, packet);
-    }
-
-    http.end();
-    led_set_blue(0);
-    response = "";
-  } else {
-    String errorMsg = "HTTP_ERROR: WiFi Disconnected";
-    printResponse(errorMsg, packet);
-  }
-}
-
-void makeHttpRequestStream(String url, AsyncUDPPacket *packet) {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    led_set_blue(255);
-    http.begin(url);
-
-    int httpResponseCode = http.GET();
-
-    if (httpResponseCode > 0) {
-      WiFiClient *stream = http.getStreamPtr();
-      UART0.println("STREAM:");
-      String response = "STATUS: " + String(httpResponseCode) + "\n";
-      printResponse(response, packet);
-
-      uint8_t buff[128] = {0};
-
-      while (stream->available()) {
-        size_t size = stream->available();
-        if (size) {
-          int c = stream->readBytes(
-              buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
-          String chunk = String((char *)buff).substring(0, c);
-          if (!chunk.toInt()) { // Check if chunk is not a number
-            if (packet) {
-              packet->write((uint8_t *)chunk.c_str(), chunk.length());
-            } else {
-              UART0.write((uint8_t *)chunk.c_str(), chunk.length());
-            }
-          }
-        }
-        delay(1); // Yield control to the system
-      }
-      // Clear the buffer
-      memset(buff, 0, sizeof(buff));
-      // Set stream pointer to nullptr
-      stream = nullptr;
-    } else {
-      String errorMsg =
-          "HTTP_ERROR: " + HTTPClient::errorToString(httpResponseCode) +
-          " (Code: " + String(httpResponseCode) + ")";
-      printResponse(errorMsg, packet);
-    }
-
-    http.end();
-    led_set_blue(0);
-  } else {
-    String errorMsg = "HTTP_ERROR: WiFi Disconnected";
-    printResponse(errorMsg, packet);
-  }
-}
-
-void makeHttpPostRequest(String url, String jsonPayload,
-                         AsyncUDPPacket *packet) {
-  if (WiFi.status() == WL_CONNECTED) {
-    if (!isContentLengthAcceptable(url)) {
-      String errorMsg = "HTTP_ERROR: Content too large";
-      printResponse(errorMsg, packet);
-      led_error();
-      return;
-    }
-
-    HTTPClient http;
-    http.begin(url);
-    http.addHeader("Content-Type", "application/json");
-
-    String response;
-    int httpResponseCode = http.POST(jsonPayload);
-
-    if (httpResponseCode > 0) {
-      String payload = http.getString();
-      response = "STATUS: " + String(httpResponseCode) + "\n";
-
-      if (isJson(payload)) {
-        response += parseJson(payload);
-        printResponse(response, packet);
-      } else {
-        response += "HTML:\n\n";
-        printResponse(response, packet);
-        printHtml(payload, packet);
-      }
-    } else {
-      String errorMsg = "HTTP_ERROR: " + getHttpErrorMessage(httpResponseCode);
-      printResponse(errorMsg, packet);
-      led_error();
-    }
-
-    http.end();
-    response = "";
-  } else {
-    String errorMsg = "HTTP_ERROR: WiFi Disconnected";
-    printResponse(errorMsg, packet);
-    led_error();
   }
 }
 
