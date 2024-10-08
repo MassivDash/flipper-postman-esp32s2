@@ -47,10 +47,9 @@ void printResponse(String response, AsyncUDPPacket *packet) {
 
 void setShowResponseHeaders(bool show, AsyncUDPPacket *packet) {
   httpCallConfig.showResponseHeaders = show;
-  printResponse(
-      "HTTP_BUILDER_SHOW_RESPONSE_HEADERS: Show response headers set to: " +
-          String(show ? "true" : "false"),
-      packet);
+  printResponse("HTTP_BUILDER_SHOW_RESPONSE_HEADERS: " +
+                    String(show ? "true" : "false"),
+                packet);
 }
 
 void setHttpMethod(String method, AsyncUDPPacket *packet) {
@@ -68,7 +67,7 @@ void setHttpMethod(String method, AsyncUDPPacket *packet) {
 
 void setHttpUrl(String url, AsyncUDPPacket *packet) {
   httpCallConfig.url = ensureHttpsPrefix(url);
-  printResponse("HTTP URL set to: " + httpCallConfig.url, packet);
+  printResponse("HTTP_URL: " + httpCallConfig.url, packet);
 }
 
 void addHttpHeader(String header, AsyncUDPPacket *packet) {
@@ -125,6 +124,7 @@ void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
     const size_t bufferSize = 512; // Increased buffer size
     uint8_t buff[bufferSize + 1];  // +1 for null-termination
     uint16_t packetNumber = 0;
+    printResponse("STREAM: ", packet);
     while (stream->connected() && stream->available()) {
       size_t size = stream->available();
       if (size) {
@@ -141,6 +141,8 @@ void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
       }
       delay(1); // Yield control to the system
     }
+    printResponse("STREAM_END", packet);
+
   } else {
     printResponse("empty", packet);
   }
@@ -151,7 +153,9 @@ void handleGetStringResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   if (payload.isEmpty()) {
     payload = "empty";
   }
+  UART0.println("RESPONSE:");
   printResponse(payload, packet);
+  UART0.println("RESPONSE_END");
 }
 
 void makeHttpRequest(String url, AsyncUDPPacket *packet) {
@@ -185,10 +189,8 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
       printResponse(response, packet);
 
       if (contentLength == -1 || contentLength > MAX_CONTENT_LENGTH) {
-        printResponse("STREAM:", packet);
         handleStreamResponse(http, packet);
       } else {
-        printResponse("RESPONSE:", packet);
         handleGetStringResponse(http, packet);
       }
     } else {

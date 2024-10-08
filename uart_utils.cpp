@@ -57,7 +57,7 @@ void UART0_RX_CB() {
 }
 
 void setSSIDCommand(String argument, AsyncUDPPacket *packet) {
-  printResponse("setting SSID to: " + argument, packet);
+  printResponse("WIFI_SSID: " + argument, packet);
   setSSID(argument);
   led_set_green(255);
   delay(1000);
@@ -66,7 +66,7 @@ void setSSIDCommand(String argument, AsyncUDPPacket *packet) {
 
 void setPasswordCommand(String argument, AsyncUDPPacket *packet) {
   setPassword(argument);
-  printResponse("WIFI_PASSWORD: Setting SSID password to " + argument, packet);
+  printResponse("WIFI_PASSWORD: " + argument, packet);
   led_set_green(255);
   delay(1000);
   led_set_green(0);
@@ -82,7 +82,7 @@ void disconnectWiFiCommand(String argument, AsyncUDPPacket *packet) {
 
 void listWiFiCommand(String argument, AsyncUDPPacket *packet) {
   String list = listWiFiNetworks();
-  printResponse("Available WiFi networks: " + list, packet);
+  printResponse(list, packet);
 }
 
 void getCommand(String argument, AsyncUDPPacket *packet) {
@@ -93,7 +93,7 @@ void getCommand(String argument, AsyncUDPPacket *packet) {
 
 void getStreamCommand(String argument, AsyncUDPPacket *packet) {
   argument = ensureHttpsPrefix(argument);
-  printResponse("GET_STREAM request to: " + argument, packet);
+  printResponse("GET_STREAM: " + argument, packet);
   makeHttpRequestStream(argument, packet);
 }
 
@@ -101,7 +101,7 @@ void postCommand(String argument, AsyncUDPPacket *packet) {
   int jsonStartIndex = argument.indexOf(' ') + 1;
   String url = argument.substring(0, jsonStartIndex - 1);
   String jsonPayload = argument.substring(jsonStartIndex);
-  printResponse("POST request to: " + url, packet);
+  printResponse("POST: " + url, packet);
   printResponse("Payload: " + jsonPayload, packet);
   makeHttpPostRequest(url, jsonPayload, packet);
 }
@@ -134,9 +134,10 @@ void buildHttpImplementationCommand(String argument, AsyncUDPPacket *packet) {
   // Check if argument is a valid string of either STREAM or CALL;
   // if not, print an error message
   if (argument != "STREAM" && argument != "CALL") {
-    printResponse("Invalid HTTP implementation. Supported implementations: "
-                  "STREAM, CALL",
-                  packet);
+    printResponse(
+        "HTTP_ERROR: Invalid HTTP implementation. Supported implementations: "
+        "STREAM, CALL",
+        packet);
     return;
   }
   setHttpImplementation(argument, packet);
@@ -156,16 +157,16 @@ void connectCommand(String argument, AsyncUDPPacket *packet) {
   if (spaceIndex != -1) {
     String ssid = argument.substring(0, spaceIndex);
     String password = argument.substring(spaceIndex + 1);
-    printResponse("Setting SSID to: " + ssid, packet);
+    printResponse("WIFI_SSID to: " + ssid, packet);
     setSSID(ssid);
-    printResponse("Setting password to: " + password, packet);
+    printResponse("WIFI_PASSWORD: " + password, packet);
     setPassword(password);
-    printResponse("Connecting to WiFi...", packet);
+    printResponse("WIFI_CONNECT: ", packet);
     connectToWiFi();
   } else {
-    printResponse(
-        "Invalid CONNECT command format. Use: CONNECT {SSID} {password}",
-        packet);
+    printResponse("WIFI_ERROR: Invalid CONNECT command format. Use: CONNECT "
+                  "<SSID> <password>",
+                  packet);
   }
 }
 
