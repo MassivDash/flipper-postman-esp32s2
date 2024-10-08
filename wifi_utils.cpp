@@ -76,12 +76,6 @@ void connectToWiFi() {
       }
 
       handleCommand(command, argument, &packet);
-
-      if (command == "GET" || command == "POST") {
-        packet.printf("Command executed: %s", receivedData.c_str());
-      } else {
-        packet.printf("Command executed: %s", command.c_str());
-      }
     });
   }
 

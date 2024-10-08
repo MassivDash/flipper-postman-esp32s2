@@ -1,4 +1,5 @@
 #include "led.h"
+#include <Arduino.h>
 #include <driver/ledc.h>
 #include <esp_err.h>
 #include <esp_log.h>
