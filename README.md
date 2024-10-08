@@ -49,7 +49,7 @@ You can switch on flipper GPIO -> UART Bridge (pins 13,14) --> plug into your us
    - "Reset Board": wait a few seconds, then go back.
    - "Enter Bootloader": wait until the 'waiting for download' message appears, then go back.
 6. Click on Manual Flash.
-7. Click on Bootloader and select the `flipper-postman-esp32s2.ino.bin`.
+7. Click on Bootloader and select the `flipper-postman-esp32s2.ino.bootloader.bin`.
 8. Click on Part Table and select the `flipper-postman-esp32s2.ino.partitions.bin`.
 9. Click on FirmwareA and select the `flipper-postman-esp32s2.ino.bin`.
 10. Click on FLASH - slow. Wait for the green blinks
