@@ -19,10 +19,8 @@ Custom flash software for Flipper Dev Board exposing the WIFI and HTTP methods v
 
 ## Serial Monitor
 
-<video src="https://flipper.spaceout.pl/demo.mp4">
-  Your browser does not support the video tag.
-</video>
-*Arduino IDE Serial monitor communication
+<video src="https://flipper.spaceout.pl/demo.mp4"></video>
+\*Arduino IDE Serial monitor communication
 
 ## UDP / Network communication
 
@@ -34,9 +32,7 @@ You can also send custom messages to the flipper, type MESSAGE: <your text> for 
 
 ## Flipper Zero Uart Terminal
 
-<video src="https://flipper.spaceout.pl/demo-board-flipper.mp4">
-  Your browser does not support the video tag.
-</video>
+<video src="https://flipper.spaceout.pl/demo-board-flipper.mp4"></video>
 
 ## Installation (Build from source)
 
