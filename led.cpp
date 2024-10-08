@@ -85,3 +85,9 @@ void led_set_blue(uint8_t value) {
       ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_2, LED_PWM_MAX_VAL - pwm_value));
   ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_2));
 }
+
+void led_error() {
+  led_set_red(255);
+  delay(1000);
+  led_set_red(0);
+}

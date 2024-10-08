@@ -34,12 +34,6 @@ struct HttpCallConfig {
 
 HttpCallConfig httpCallConfig;
 
-void led_error() {
-  led_set_red(255);
-  delay(1000);
-  led_set_red(0);
-}
-
 void printResponse(String response, AsyncUDPPacket *packet) {
   if (response.isEmpty()) {
     response = "empty";
@@ -128,34 +122,27 @@ int getContentLength(String url) {
 void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   WiFiClient *stream = http.getStreamPtr();
   if (stream) {
-    uint8_t buff[128] = {0};
+    const size_t bufferSize = 512; // Increased buffer size
+    uint8_t buff[bufferSize + 1];  // +1 for null-termination
     uint16_t packetNumber = 0;
-    while (stream->available()) {
+    while (stream->connected() && stream->available()) {
       size_t size = stream->available();
       if (size) {
-        int c = stream->readBytes(
-            buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
-        buff[c] = '\0'; // Ensure null-termination
-        String chunk = String((char *)buff);
-        if (!chunk.toInt()) { // Check if chunk is not a number
-          String packetData = String(packetNumber) + ":" + chunk;
+        int bytesRead = stream->readBytes(buff, min(size, bufferSize));
+        if (bytesRead > 0) {
+          buff[bytesRead] = '\0'; // Ensure null-termination
           if (packet) {
-            packet->write((uint8_t *)packetData.c_str(), packetData.length());
+            packet->write(buff, bytesRead);
           } else {
-            UART0.write((uint8_t *)packetData.c_str(), packetData.length());
+            UART0.write(buff, bytesRead);
           }
           packetNumber++;
         }
       }
       delay(1); // Yield control to the system
     }
-    // Clear the buffer
-    memset(buff, 0, sizeof(buff));
-    // Set stream pointer to nullptr
-    stream = nullptr;
   } else {
-    String payload = "empty";
-    printResponse(payload, packet);
+    printResponse("empty", packet);
   }
 }
 
