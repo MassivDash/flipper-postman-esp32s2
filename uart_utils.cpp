@@ -189,7 +189,7 @@ void connectCommand(String argument, AsyncUDPPacket *packet) {
   }
 }
 
-void getBoardVersion(String argument, AsyncUDPPacket *packet) {
+void getBoardVersionCommand(String argument, AsyncUDPPacket *packet) {
   printResponse("VERSION: " + String(version), packet);
 }
 
