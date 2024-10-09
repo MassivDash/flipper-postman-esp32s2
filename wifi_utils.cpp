@@ -79,7 +79,7 @@ void connectToWiFi() {
 
     udp.onPacket([](AsyncUDPPacket packet) {
       String receivedData = String((char *)packet.data(), packet.length());
-      UART0.println("WIFI_INFO: Received UDP: " + receivedData);
+      UART0.println("WIFI_UDP_INCOMING_DATA: " + receivedData);
 
       String command;
       String argument;

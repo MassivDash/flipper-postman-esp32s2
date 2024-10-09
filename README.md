@@ -17,11 +17,6 @@ Custom flash software for Flipper Dev Board exposing the WIFI and HTTP methods v
 - UDP communication, send commands and messages over the network via UDP packets
 - LED indicators for different states
 
-## Serial Monitor
-
-<video src="https://flipper.spaceout.pl/demo.mp4"></video>
-\*Arduino IDE Serial monitor communication
-
 ## UDP / Network communication
 
 After you establish wifi the board listens to UDP packets you can use mobile apps (with TCP/UDP) or use cmd line tools like `echo -n "GET https://api.spacexdata.com/v3/rockets" | nc -u 192.168.0.115 1234`.
@@ -31,6 +26,8 @@ The board will transmit the local port and into the serial
 You can also send custom messages to the flipper, type MESSAGE: <your text> for transmitting whatever you want to your flipper device.
 
 ## Flipper Zero Uart Terminal
+
+You can use the https://github.com/cool4uma/UART_Terminal to communicate directly with the board. You don't have to write `https://` it will be auto added by the board.
 
 ![Flipper UART Terminal](./docs/flipper-uart-terminal.gif);
 
@@ -145,5 +142,11 @@ WIFI_LIST: Available WiFi networks: <list>
 - Website crawls will print html only on smaller websites.
 - You should be able to stream files and images to flipper via stream (untested)
 - Simple get call will make a head call first and determine the possible size of the content, that will not always be possible, if the content length is unknown, firmware will choose safer stream method
+
+## ESP32 links
+
+- [ESP32 Arduino Setup ](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/)
+- [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/v4.3/esp32s2/api-guides/tools/idf-tools.html)
+- [ESP32S2 Specs](https://www.espressif.com/sites/default/files/documentation/esp32-s2_datasheet_en.pdf)
 
 Author: SpaceGhost @ spaceout.pl
