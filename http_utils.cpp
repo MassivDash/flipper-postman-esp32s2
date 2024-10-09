@@ -52,6 +52,19 @@ void setShowResponseHeaders(bool show, AsyncUDPPacket *packet) {
                 packet);
 }
 
+void getHttpBuilderConfig(AsyncUDPPacket *packet) {
+  printResponse("HTTP_BUILDER_CONFIG: ", packet);
+  printResponse("HTTP_METHOD: " + httpCallConfig.method, packet);
+  printResponse("HTTP_URL: " + httpCallConfig.url, packet);
+  printResponse("HTTP_PAYLOAD: " + httpCallConfig.payload, packet);
+  printResponse("HTTP_IMPLEMENTATION: " + httpCallConfig.implementation,
+                packet);
+  printResponse("HTTP_HEADERS: ", packet);
+  for (const auto &header : httpCallConfig.headers) {
+    printResponse(header.first + ": " + header.second, packet);
+  }
+}
+
 void setHttpMethod(String method, AsyncUDPPacket *packet) {
   if (method != "GET" && method != "POST" && method != "PATCH" &&
       method != "PUT" && method != "DELETE" && method != "HEAD") {
