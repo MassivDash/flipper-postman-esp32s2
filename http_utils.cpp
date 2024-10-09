@@ -154,7 +154,7 @@ void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
       }
       delay(1); // Yield control to the system
     }
-    printResponse("STREAM_END", packet);
+    printResponse("\nSTREAM_END", packet);
 
   } else {
     printResponse("empty", packet);

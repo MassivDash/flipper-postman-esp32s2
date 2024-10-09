@@ -83,11 +83,11 @@ void activateWiFiCommand(String argument, AsyncUDPPacket *packet) {
   connectToWiFi();
 }
 
-void checkWiFiStatus(String argument, AsyncUDPPacket *packet) {
+void checkWiFiStatusCommand(String argument, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
-    printResponse("WIFI_STATUS", packet);
+    printResponse("WIFI_STATUS: CONNECTED", packet);
   } else {
-    printResponse("WIFI_STATUS", packet);
+    printResponse("WIFI_STATUS: DISCONNECTED", packet);
   }
 }
 
@@ -254,8 +254,8 @@ void initializeCommands() {
   commands[15].execute = buildHttpImplementationCommand;
   commands[16].execute = executeHttpCallCommand;
   commands[17].execute = connectCommand;
-  commands[18].execute = getBoardVersion;
-  commands[19].execute = checkWiFiStatus;
+  commands[18].execute = getBoardVersionCommand;
+  commands[19].execute = checkWiFiStatusCommand;
   commands[20].execute = getHttpBuilderConfigCommand;
   commands[21].execute = helpCommand;
   commands[22].execute = helpCommand;
