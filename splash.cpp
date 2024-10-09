@@ -1,4 +1,5 @@
 #include "uart_utils.h"
+#include "version.h"
 #include <Arduino.h>
 // Function to print the splash screen
 void printSplashScreen() {
@@ -32,7 +33,8 @@ void printSplashScreen() {
 void printTitle() {
   UART0.println("===========================================================");
   UART0.println("||                                                       ||");
-  UART0.println("||           Flipper Postman Board v0.1                  ||");
+  UART0.println("||           Flipper Postman Board v" + String(version) +
+                "                 ||");
   UART0.println("||          by SpaceGhost at spaceout.pl                 ||");
   UART0.println("||                                                       ||");
   UART0.println("===========================================================");
