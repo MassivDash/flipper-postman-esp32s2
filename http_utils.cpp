@@ -162,13 +162,32 @@ void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
 }
 
 void handleGetStringResponse(HTTPClient &http, AsyncUDPPacket *packet) {
+  // Check available heap memory
+  size_t freeHeap = ESP.getFreeHeap();
+  const size_t minHeapThreshold = 1024; // Minimum heap space to avoid overflow
+
+  if (freeHeap < minHeapThreshold) {
+    printResponse("WIFI_ERROR: Not enough memory to process the response.",
+                  packet);
+    return;
+  }
+
   String payload = http.getString();
   if (payload.isEmpty()) {
     payload = "empty";
   }
-  UART0.println("RESPONSE:");
+
+  // Check again after getting the payload
+  freeHeap = ESP.getFreeHeap();
+  if (freeHeap < minHeapThreshold) {
+    printResponse("WIFI_ERROR: Not enough memory to process the full response.",
+                  packet);
+    return;
+  }
+
+  printResponse("RESPONSE:", packet);
   printResponse(payload, packet);
-  UART0.println("RESPONSE_END");
+  printResponse("RESPONSE_END", packet);
 }
 
 void makeHttpRequest(String url, AsyncUDPPacket *packet) {
@@ -340,6 +359,7 @@ void executeHttpCall(AsyncUDPPacket *packet) {
 
     if (httpResponseCode > 0) {
       response = "STATUS: " + String(httpResponseCode) + "\n";
+      printResponse(response, packet);
 
       if (httpCallConfig.showResponseHeaders) {
         printResponse("HEADERS:", packet);
@@ -354,7 +374,6 @@ void executeHttpCall(AsyncUDPPacket *packet) {
         }
       }
 
-      printResponse(response, packet);
       if (httpCallConfig.implementation == "STREAM") {
         handleStreamResponse(http, packet);
       } else {
