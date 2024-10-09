@@ -29,7 +29,13 @@ You can also send custom messages to the flipper, type MESSAGE: <your text> for 
 
 You can use the https://github.com/cool4uma/UART_Terminal to communicate directly with the board. You don't have to write `https://` it will be auto added by the board.
 
-![Flipper UART Terminal](./docs/flipper-uart-terminal.gif);
+![Flipper UART Terminal](./docs/flipper-uart-terminal.gif)
+
+## Arduino Ide Serial Monitor
+
+Communication via usb to flipperzero (GPIO->USB-UART Bridge) with Arduino Ide Serial Monitor
+
+![Arduino Ide SerialMonitor](./docs/flipper-board-serial-monitor.gif)
 
 ## Installation (Build from source)
 
