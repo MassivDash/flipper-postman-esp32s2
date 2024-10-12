@@ -17,29 +17,31 @@ void placeholderCommand(String argument, AsyncUDPPacket *packet) {}
 
 // Declare the commands array with placeholder functions
 Command commands[] = {
-    {"SET_SSID", "SET ssid <ssid>", placeholderCommand},
-    {"SET_PASSWORD", "SET password <password>", placeholderCommand},
-    {"ACTIVATE_WIFI", "ACTIVATE_WIFI", placeholderCommand},
-    {"DISCONNECT_WIFI", "DISCONNECT_WIFI", placeholderCommand},
-    {"LIST_WIFI", "LIST_WIFI", placeholderCommand},
+    {"VERSION", "VERSION: Get board version", placeholderCommand},
+    {"WIFI_CONNECT", "WIFI_CONNECT <SSID> <password>", placeholderCommand},
+    {"WIFI_SET_SSID", "WIFI_SET_SSID ssid <ssid>", placeholderCommand},
+    {"WIFI_SET_PASSWORD", "WIFI_SET_PASSWORD password <password>", placeholderCommand},
+    {"WIFI_ACTIVATE", "WIFI_ACTIVATE", placeholderCommand},
+    {"WIFI_DEACTIVATE", "WIFI_DEACTIVATE", placeholderCommand},
+    {"WIFI_LIST", "WIFI_LIST", placeholderCommand},
+    {"WIFI_STATUS", "WIFI_STATUS: Show wifi status CONNECTED / DISCONNECTED",
+     placeholderCommand},
+    {"WIFI_GET_ACTIVE_SSID", "WIFI_GET_ACTIVE_SSID: <ssid>",
+     placeholderCommand},
     {"GET", "GET <url>", placeholderCommand},
     {"GET_STREAM", "GET_STREAM <url>", placeholderCommand},
     {"POST", "POST <url> <json_payload>", placeholderCommand},
     {"BUILD_HTTP_METHOD", "BUILD_HTTP_METHOD <method>", placeholderCommand},
     {"BUILD_HTTP_URL", "BUILD_HTTP_URL <url>", placeholderCommand},
-    {"BUILD_HTTP_HEADER", "BUILD_HTTP_HEADER <header>", placeholderCommand},
+    {"BUILD_HTTP_HEADER", "BUILD_HTTP_HEADER <key:value>", placeholderCommand},
     {"BUILD_HTTP_PAYLOAD", "BUILD_HTTP_PAYLOAD <payload>", placeholderCommand},
-    {"REMOVE_HTTP_HEADER", "REMOVE_HTTP_HEADER <header>", placeholderCommand},
+    {"REMOVE_HTTP_HEADER", "REMOVE_HTTP_HEADER <key>", placeholderCommand},
     {"RESET_HTTP_CONFIG", "RESET_HTTP_CONFIG", placeholderCommand},
     {"BUILD_HTTP_SHOW_RESPONSE_HEADERS",
      "BUILD_HTTP_SHOW_RESPONSE_HEADERS <true/false>", placeholderCommand},
     {"BUILD_HTTP_IMPLEMENTATION", "BUILD_HTTP_IMPLEMENTATION <STREAM/CALL>",
      placeholderCommand},
     {"EXECUTE_HTTP_CALL", "EXECUTE_HTTP_CALL", placeholderCommand},
-    {"CONNECT", "CONNECT <SSID> <password>", placeholderCommand},
-    {"VERSION", "VERSION: Get board version", placeholderCommand},
-    {"WIFI_STATUS", "WIFI_STATUS: Show wifi status CONNECTED / DISCONNECTED",
-     placeholderCommand},
     {"BUILD_HTTP_SHOW_CONFIG",
      "BUILD_HTTP_SHOW_CONFIG: Show current HTTP configuration",
      placeholderCommand},
@@ -171,16 +173,21 @@ void executeHttpCallCommand(String argument, AsyncUDPPacket *packet) {
   executeHttpCall(packet);
 }
 
+void wifiNetworkCommand(String argument, AsyncUDPPacket *packet) {
+  if (WiFi.status() == WL_CONNECTED) {
+    printResponse("WIFI_GET_ACTIVE_SSID: " + WiFi.SSID(), packet);
+  } else {
+    printResponse("WIFI_GET_ACTIVE_SSID: Not connected", packet);
+  }
+}
+
 void connectCommand(String argument, AsyncUDPPacket *packet) {
   int spaceIndex = argument.indexOf(' ');
   if (spaceIndex != -1) {
     String ssid = argument.substring(0, spaceIndex);
     String password = argument.substring(spaceIndex + 1);
-    printResponse("WIFI_SSID: " + ssid, packet);
     setSSID(ssid);
-    printResponse("WIFI_PASSWORD: " + password, packet);
     setPassword(password);
-    printResponse("WIFI_CONNECT: ", packet);
     connectToWiFi();
   } else {
     printResponse("WIFI_ERROR: Invalid CONNECT command format. Use: CONNECT "
@@ -236,29 +243,30 @@ void handleSerialInput() {
 
 // Assign the actual functions to the commands array
 void initializeCommands() {
-  commands[0].execute = setSSIDCommand;
-  commands[1].execute = setPasswordCommand;
-  commands[2].execute = activateWiFiCommand;
-  commands[3].execute = disconnectWiFiCommand;
-  commands[4].execute = listWiFiCommand;
-  commands[5].execute = getCommand;
-  commands[6].execute = getStreamCommand;
-  commands[7].execute = postCommand;
-  commands[8].execute = buildHttpMethodCommand;
-  commands[9].execute = buildHttpUrlCommand;
-  commands[10].execute = buildHttpHeaderCommand;
-  commands[11].execute = buildHttpPayloadCommand;
-  commands[12].execute = removeHttpHeaderCommand;
-  commands[13].execute = resetHttpConfigCommand;
-  commands[14].execute = buildHttpShowResponseHeadersCommand;
-  commands[15].execute = buildHttpImplementationCommand;
-  commands[16].execute = executeHttpCallCommand;
-  commands[17].execute = connectCommand;
-  commands[18].execute = getBoardVersionCommand;
-  commands[19].execute = checkWiFiStatusCommand;
-  commands[20].execute = getHttpBuilderConfigCommand;
-  commands[21].execute = helpCommand;
+  commands[0].execute = getBoardVersionCommand;
+  commands[1].execute = connectCommand;
+  commands[2].execute = setSSIDCommand;
+  commands[3].execute = setPasswordCommand;
+  commands[4].execute = activateWiFiCommand;
+  commands[5].execute = disconnectWiFiCommand;
+  commands[6].execute = listWiFiCommand;
+  commands[7].execute = checkWiFiStatusCommand;
+  commands[8].execute = wifiNetworkCommand;
+  commands[9].execute = getCommand;
+  commands[10].execute = getStreamCommand;
+  commands[11].execute = postCommand;
+  commands[12].execute = buildHttpMethodCommand;
+  commands[13].execute = buildHttpUrlCommand;
+  commands[14].execute = buildHttpHeaderCommand;
+  commands[15].execute = buildHttpPayloadCommand;
+  commands[16].execute = removeHttpHeaderCommand;
+  commands[17].execute = resetHttpConfigCommand;
+  commands[18].execute = buildHttpShowResponseHeadersCommand;
+  commands[19].execute = buildHttpImplementationCommand;
+  commands[20].execute = executeHttpCallCommand;
+  commands[21].execute = getHttpBuilderConfigCommand;
   commands[22].execute = helpCommand;
+  commands[23].execute = helpCommand;
 }
 
 // Call initializeCommands() in your setup function or main function
