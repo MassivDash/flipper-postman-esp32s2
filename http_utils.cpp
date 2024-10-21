@@ -161,6 +161,26 @@ void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   }
 }
 
+void handleFileStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
+  WiFiClient *stream = http.getStreamPtr();
+  if (stream) {
+    const size_t bufferSize = 512; // Increased buffer size
+    uint8_t buff[bufferSize + 1];  // +1 for null-termination
+
+    while (stream->connected() && stream->available()) {
+      size_t size = stream->available();
+      if (size) {
+        int bytesRead = stream->readBytes(buff, min(size, bufferSize));
+        if (bytesRead > 0) {
+          buff[bytesRead] = '\0'; // Ensure null-termination
+          UART0.write(buff, bytesRead); // Send directly over UART
+        }
+      }
+      delay(1); // Yield control to the system
+    }
+  }
+}
+
 void handleGetStringResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   // Check available heap memory
   size_t freeHeap = ESP.getFreeHeap();
@@ -235,6 +255,23 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
   } else {
     String errorMsg = "HTTP_ERROR: WiFi Disconnected";
     printResponse(errorMsg, packet);
+  }
+}
+
+void makeHttpFileRequest(String url, AsyncUDPPacket *packet) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    led_set_blue(255);
+    http.begin(url);
+
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      handleFileStreamResponse(http, packet);
+    }
+
+    http.end();
+    led_set_blue(0);
   }
 }
 

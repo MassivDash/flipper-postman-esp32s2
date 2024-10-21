@@ -46,13 +46,18 @@ Communication via usb to flipperzero (GPIO->USB-UART Bridge) with Arduino Ide Se
 Copy and paste the `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
 
 3. Wait for installation
-4. Arduino IDE -> Tools -> Manage Libraries -> find [UART Terminal Application](https://github.com/cool4uma/UART_Terminal). You can also connect flipper to your computer via usb cable then enter GPIO and enable the UART-USB Bridge to communicate directly to board via Arduino IDE Serial Monitor or [minicom](https://wiki.emacinc.com/wiki/Getting_Started_With_Minicom) cmd line program
-5. Set the SSID and password for the WiFi connection using the `SET_SSID` and `SET_PASSWORD` commands.
-6. Activate the WiFi connection using the `ACTIVATE_WIFI` command.
-7. Use the `GET`, `POST`, or `GET_STREAM` commands to make HTTP requests.
-8. Build custom HTTP requests using the `BUILD_HTTP_*` commands.
-9. Execute custom HTTP requests using the `EXECUTE_HTTP_CALL` command.
-10. Use the `?` or `HELP` commands to print help information.
+4. Arduino IDE -> Tools -> Board -> Board Manager -> look for `esp32 by Expressif systems` and install
+5. Arduino IDE -> Tools -> Manage Libraries -> find ArduinoJSON package and install
+6. Arduino IDE -> Select Board -> choose esp32s2 dev board
+
+[UART Terminal Application](https://github.com/cool4uma/UART_Terminal). You can also connect flipper to your computer via usb cable then enter GPIO and enable the UART-USB Bridge to communicate directly to board via Arduino IDE Serial Monitor or [minicom](https://wiki.emacinc.com/wiki/Getting_Started_With_Minicom) cmd line program
+
+7. Set the SSID and password for the WiFi connection using the `SET_SSID` and `SET_PASSWORD` commands.
+8. Activate the WiFi connection using the `ACTIVATE_WIFI` command.
+9. Use the `GET`, `POST`, or `GET_STREAM` commands to make HTTP requests.
+10. Build custom HTTP requests using the `BUILD_HTTP_*` commands.
+11. Execute custom HTTP requests using the `EXECUTE_HTTP_CALL` command.
+12. Use the `?` or `HELP` commands to print help information.
 
 ## SERIAL API Documentation
 
@@ -84,6 +89,7 @@ This section provides detailed information about the available commands, their d
 | `BUILD_HTTP_IMPLEMENTATION <STREAM/CALL>`       | Set the HTTP implementation type (STREAM or CALL) | `<STREAM/CALL>`        | Text          | `HTTP_SET_IMPLEMENTATION: <STREAM/CALL>`                                                                |
 | `EXECUTE_HTTP_CALL`                             | Execute the custom HTTP request                   | None                   | Text/Stream   | Depends on the implementation type (STREAM or CALL)                                                     |
 | `BUILD_HTTP_SHOW_CONFIG`                        | Show current HTTP configuration                   | None                   | Text          | `HTTP_BUILDER_CONFIG: <current configuration>`                                                          |
+| `FILE_STREAM`                                   | Direct stream, no messages                        | `<url>`                | Text          | `<stream>`                                                                                              |
 | `?`                                             | Print help information                            | None                   | Text          | `Available Commands: <list of commands>`                                                                |
 | `HELP`                                          | Print help information                            | None                   | Text          | `Available Commands: <list of commands>`                                                                |
 

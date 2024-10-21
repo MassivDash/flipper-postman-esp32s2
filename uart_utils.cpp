@@ -45,6 +45,7 @@ Command commands[] = {
     {"BUILD_HTTP_SHOW_CONFIG",
      "BUILD_HTTP_SHOW_CONFIG: Show current HTTP configuration",
      placeholderCommand},
+    {"FILE_STREAM", "FILE_STREAM <url>", placeholderCommand},
     {"?", "type ? to print help", placeholderCommand},
     {"HELP", "HELP", placeholderCommand}};
 
@@ -106,6 +107,12 @@ void getCommand(String argument, AsyncUDPPacket *packet) {
   argument = ensureHttpsPrefix(argument);
   printResponse("GET request to: " + argument, packet);
   makeHttpRequest(argument, packet);
+}
+
+void getFileStreamCommand(String argument, AsyncUDPPacket *packet) {
+  argument = ensureHttpsPrefix(argument);
+  (argument, packet);
+  makeHttpFileRequest(argument, packet);
 }
 
 void getStreamCommand(String argument, AsyncUDPPacket *packet) {
@@ -265,8 +272,9 @@ void initializeCommands() {
   commands[19].execute = buildHttpImplementationCommand;
   commands[20].execute = executeHttpCallCommand;
   commands[21].execute = getHttpBuilderConfigCommand;
-  commands[22].execute = helpCommand;
+  commands[22].execute = getFileStreamCommand;
   commands[23].execute = helpCommand;
+  commands[24].execute = helpCommand;
 }
 
 // Call initializeCommands() in your setup function or main function

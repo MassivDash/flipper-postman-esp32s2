@@ -23,7 +23,7 @@ void removeHttpHeader(String name, AsyncUDPPacket *packet);
 void resetHttpConfig(AsyncUDPPacket *packet);
 void executeHttpCall(AsyncUDPPacket *packet);
 void getHttpBuilderConfig(AsyncUDPPacket *packet);
-
+void makeHttpFileRequest(String url, AsyncUDPPacket *packet);
 // HTTP Helper functions
 void setShowResponseHeaders(bool show, AsyncUDPPacket *packet);
 String getHttpErrorMessage(int httpCode);
