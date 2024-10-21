@@ -232,6 +232,7 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
 
     HTTPClient http;
     led_set_blue(255);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     http.begin(url);
 
     int httpResponseCode = http.GET();
@@ -262,7 +263,9 @@ void makeHttpFileRequest(String url, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     led_set_blue(255);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     http.begin(url);
+
 
     int httpResponseCode = http.GET();
 
@@ -279,6 +282,7 @@ void makeHttpRequestStream(String url, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
     led_set_blue(255);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     http.begin(url);
 
     int contentLength = getContentLength(url);
@@ -359,6 +363,7 @@ void executeHttpCall(AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
     led_set_blue(255);
     HTTPClient http;
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     http.begin(httpCallConfig.url);
 
     for (const auto &header : httpCallConfig.headers) {

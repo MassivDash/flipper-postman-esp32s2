@@ -154,7 +154,7 @@ WIFI_LIST: Available WiFi networks: <list>
 
 ## Notes
 
-- The firmware currently does not follow redirects,
+- The firmware currently follow strict redirects (`HTTPC_STRICT_FOLLOW_REDIRECTS` - strict RFC2616, only requests using GET or HEAD methods will be redirected (using the same method), since the RFC requires end-user confirmation in other cases.)
 - Website crawls will print html only on smaller websites.
 - You should be able to stream files and images to flipper via stream (untested)
 - Simple get call will make a head call first and determine the possible size of the content, that will not always be possible, if the content length is unknown, firmware will choose safer stream method
