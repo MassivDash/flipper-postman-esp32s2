@@ -139,7 +139,7 @@ void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   NetworkClient *stream = http.getStreamPtr();
 
   printResponse("STREAM: ", packet);
-  while (http.connected() && (len > 0 || len == -1)) {
+  while (http.connected() && (len > 0 || len  == -1) ) {
     size_t size = stream->available();
     if (size) {
       int c = stream->readBytes(buff, min(size, bufferSize - 1)); // Adjust for null terminator
@@ -152,10 +152,7 @@ void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
       if (len > 0) {
         len -= c;
       }
-    } else {
-      //No Data break out of the loop
-      break; 
-    }
+    } 
     delay(1); // Yield control to the system
   }
   printResponse("\nSTREAM_END", packet);
@@ -175,9 +172,6 @@ void handleFileStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
       if (len > 0) {
         len -= c;
       }
-    } else {
-      //No Data break out of the loop
-      break; 
     }
     delay(1); // Yield control to the system
   }
