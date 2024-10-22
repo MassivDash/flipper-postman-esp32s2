@@ -132,52 +132,54 @@ int getContentLength(String url) {
 }
 
 void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
-  WiFiClient *stream = http.getStreamPtr();
-  if (stream) {
-    const size_t bufferSize = 512; // Increased buffer size
-    uint8_t buff[bufferSize + 1];  // +1 for null-termination
-    uint16_t packetNumber = 0;
-    printResponse("STREAM: ", packet);
-    while (stream->connected() && stream->available()) {
-      size_t size = stream->available();
-      if (size) {
-        int bytesRead = stream->readBytes(buff, min(size, bufferSize));
-        if (bytesRead > 0) {
-          buff[bytesRead] = '\0'; // Ensure null-termination
-          if (packet) {
-            packet->write(buff, bytesRead);
-          } else {
-            UART0.write(buff, bytesRead);
-          }
-          packetNumber++;
-        }
-      }
-      delay(1); // Yield control to the system
-    }
-    printResponse("\nSTREAM_END", packet);
+  int len = http.getSize();
+  const size_t bufferSize = 512; // Buffer size for reading data
+  uint8_t buff[bufferSize + 1] = {0}; // Buffer with space for null-terminator
 
-  } else {
-    printResponse("empty", packet);
+  NetworkClient *stream = http.getStreamPtr();
+
+  printResponse("STREAM: ", packet);
+  while (http.connected() && (len > 0 || len == -1)) {
+    size_t size = stream->available();
+    if (size) {
+      int c = stream->readBytes(buff, min(size, bufferSize - 1)); // Adjust for null terminator
+      buff[c] = '\0'; // Null-terminate the buffer
+      if (packet) {
+        packet->write(buff, c);
+      } else {
+        UART0.write(buff, c);
+      }
+      if (len > 0) {
+        len -= c;
+      }
+    } else {
+      //No Data break out of the loop
+      break; 
+    }
+    delay(1); // Yield control to the system
   }
+  printResponse("\nSTREAM_END", packet);
 }
 
 void handleFileStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
-  WiFiClient *stream = http.getStreamPtr();
-  if (stream) {
-    const size_t bufferSize = 512; // Increased buffer size
-    uint8_t buff[bufferSize + 1];  // +1 for null-termination
+  int len = http.getSize();
+  uint8_t buff[512] = {0};
 
-    while (stream->connected() && stream->available()) {
-      size_t size = stream->available();
-      if (size) {
-        int bytesRead = stream->readBytes(buff, min(size, bufferSize));
-        if (bytesRead > 0) {
-          buff[bytesRead] = '\0'; // Ensure null-termination
-          UART0.write(buff, bytesRead); // Send directly over UART
-        }
+  NetworkClient *stream = http.getStreamPtr();
+
+  while (http.connected() && (len > 0 || len == -1)) {
+    size_t size = stream->available();
+    if (size) {
+      int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+      UART0.write(buff, c);
+      if (len > 0) {
+        len -= c;
       }
-      delay(1); // Yield control to the system
+    } else {
+      //No Data break out of the loop
+      break; 
     }
+    delay(1); // Yield control to the system
   }
 }
 
@@ -322,6 +324,7 @@ void makeHttpRequestStream(String url, AsyncUDPPacket *packet) {
   } else {
     String errorMsg = "HTTP_ERROR: WiFi Disconnected";
     printResponse(errorMsg, packet);
+    led_error();
   }
 }
 
