@@ -350,6 +350,25 @@ void makeHttpPostRequest(String url, String jsonPayload,
   }
 }
 
+void makeHttpPostFileRequest(String url, String jsonPayload, AsyncUDPPacket *packet) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    led_set_blue(255);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    http.begin(url);
+    http.addHeader("Content-Type", "application/json");
+
+    int httpResponseCode = http.POST(jsonPayload);
+
+    if (httpResponseCode > 0) {
+      handleFileStreamResponse(http, packet);
+    }
+
+    http.end();
+    led_set_blue(0);
+  }
+}
+
 void executeHttpCall(AsyncUDPPacket *packet) {
   if (httpCallConfig.url.isEmpty() || httpCallConfig.method.isEmpty()) {
     String errorMsg = "HTTP URL or Method not set";

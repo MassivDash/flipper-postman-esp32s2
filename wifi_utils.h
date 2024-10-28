@@ -10,5 +10,7 @@ void disconnectFromWiFi();
 const char *getSSID();
 const char *getPassword();
 String listWiFiNetworks();
+String getLocalIpString();
+void sendUDPMessage(const char* message, IPAddress remoteIP, uint16_t remotePort);
 
 #endif // WIFI_UTILS_H

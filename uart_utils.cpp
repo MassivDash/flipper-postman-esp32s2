@@ -28,9 +28,12 @@ Command commands[] = {
      placeholderCommand},
     {"WIFI_GET_ACTIVE_SSID", "WIFI_GET_ACTIVE_SSID: <ssid>",
      placeholderCommand},
+    {"WIFI_GET_LOCAL_IP", "WIFI_GET_LOCAL_IP", placeholderCommand},
     {"GET", "GET <url>", placeholderCommand},
     {"GET_STREAM", "GET_STREAM <url>", placeholderCommand},
+    {"FILE_STREAM", "FILE_STREAM <url>", placeholderCommand},
     {"POST", "POST <url> <json_payload>", placeholderCommand},
+    {"POST_STREAM", "POST_STREAM <url> <json>", placeholderCommand},
     {"BUILD_HTTP_METHOD", "BUILD_HTTP_METHOD <method>", placeholderCommand},
     {"BUILD_HTTP_URL", "BUILD_HTTP_URL <url>", placeholderCommand},
     {"BUILD_HTTP_HEADER", "BUILD_HTTP_HEADER <key:value>", placeholderCommand},
@@ -45,7 +48,7 @@ Command commands[] = {
     {"BUILD_HTTP_SHOW_CONFIG",
      "BUILD_HTTP_SHOW_CONFIG: Show current HTTP configuration",
      placeholderCommand},
-    {"FILE_STREAM", "FILE_STREAM <url>", placeholderCommand},
+    {"MESSAGE_UDP", "MESSAGE_UDP <message> <remoteIP> <remotePort>", placeholderCommand},
     {"?", "type ? to print help", placeholderCommand},
     {"HELP", "HELP", placeholderCommand}};
 
@@ -103,6 +106,11 @@ void listWiFiCommand(String argument, AsyncUDPPacket *packet) {
   printResponse(list, packet);
 }
 
+void getWifiLocalIp(String argument, AsyncUDPPacket *packet) {
+  String ipString = getLocalIpString();
+  printResponse(ipString, packet);
+}
+
 void getCommand(String argument, AsyncUDPPacket *packet) {
   argument = ensureHttpsPrefix(argument);
   printResponse("GET request to: " + argument, packet);
@@ -128,6 +136,13 @@ void postCommand(String argument, AsyncUDPPacket *packet) {
   printResponse("POST: " + url, packet);
   printResponse("Payload: " + jsonPayload, packet);
   makeHttpPostRequest(url, jsonPayload, packet);
+}
+
+void postStreamCommand(String argument, AsyncUDPPacket *packet) {
+  int jsonStartIndex = argument.indexOf(' ') + 1;
+  String url = argument.substring(0, jsonStartIndex - 1);
+  String jsonPayload = argument.substring(jsonStartIndex);
+  makeHttpPostFileRequest(url, jsonPayload, packet);
 }
 
 void buildHttpMethodCommand(String argument, AsyncUDPPacket *packet) {
@@ -248,6 +263,32 @@ void handleSerialInput() {
   }
 }
 
+void handleMessageUDPCommand(String argument, AsyncUDPPacket *packet) {
+  // Find the position of the last two spaces
+  int lastSpaceIndex = argument.lastIndexOf(' ');
+  int secondLastSpaceIndex = argument.lastIndexOf(' ', lastSpaceIndex - 1);
+
+  // Extract remotePort
+  uint16_t remotePort = argument.substring(lastSpaceIndex + 1).toInt();
+
+  // Extract remoteIP
+  String remoteIPString = argument.substring(secondLastSpaceIndex + 1, lastSpaceIndex);
+  IPAddress remoteIP;
+  if (!remoteIP.fromString(remoteIPString)) {
+    UART0.println("ERROR: Invalid IP address format");
+    return;
+  }
+
+  // Extract message
+  String message = argument.substring(0, secondLastSpaceIndex);
+
+  // Send the UDP message
+  sendUDPMessage(message.c_str(), remoteIP, remotePort);
+
+  UART0.println("UDP message sent: " + message);
+  UART0.println("To IP: " + remoteIPString + ", Port: " + String(remotePort));
+}
+
 // Assign the actual functions to the commands array
 void initializeCommands() {
   commands[0].execute = getBoardVersionCommand;
@@ -259,22 +300,25 @@ void initializeCommands() {
   commands[6].execute = listWiFiCommand;
   commands[7].execute = checkWiFiStatusCommand;
   commands[8].execute = wifiNetworkCommand;
-  commands[9].execute = getCommand;
-  commands[10].execute = getStreamCommand;
-  commands[11].execute = postCommand;
-  commands[12].execute = buildHttpMethodCommand;
-  commands[13].execute = buildHttpUrlCommand;
-  commands[14].execute = buildHttpHeaderCommand;
-  commands[15].execute = buildHttpPayloadCommand;
-  commands[16].execute = removeHttpHeaderCommand;
-  commands[17].execute = resetHttpConfigCommand;
-  commands[18].execute = buildHttpShowResponseHeadersCommand;
-  commands[19].execute = buildHttpImplementationCommand;
-  commands[20].execute = executeHttpCallCommand;
-  commands[21].execute = getHttpBuilderConfigCommand;
-  commands[22].execute = getFileStreamCommand;
-  commands[23].execute = helpCommand;
-  commands[24].execute = helpCommand;
+  commands[9].execute = getWifiLocalIp;
+  commands[10].execute = getCommand;
+  commands[11].execute = getStreamCommand;
+  commands[12].execute = getFileStreamCommand;
+  commands[13].execute = postCommand;
+  commands[14].execute = postStreamCommand;
+  commands[15].execute = buildHttpMethodCommand;
+  commands[16].execute = buildHttpUrlCommand;
+  commands[17].execute = buildHttpHeaderCommand;
+  commands[18].execute = buildHttpPayloadCommand;
+  commands[19].execute = removeHttpHeaderCommand;
+  commands[20].execute = resetHttpConfigCommand;
+  commands[21].execute = buildHttpShowResponseHeadersCommand;
+  commands[22].execute = buildHttpImplementationCommand;
+  commands[23].execute = executeHttpCallCommand;
+  commands[24].execute = getHttpBuilderConfigCommand;
+  commands[25].execute = handleMessageUDPCommand;
+  commands[26].execute = helpCommand;
+  commands[27].execute = helpCommand;
 }
 
 // Call initializeCommands() in your setup function or main function

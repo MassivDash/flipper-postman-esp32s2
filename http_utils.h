@@ -12,6 +12,7 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet);
 void makeHttpRequestStream(String url, AsyncUDPPacket *packet);
 void makeHttpPostRequest(String url, String jsonPayload,
                          AsyncUDPPacket *packet);
+void makeHttpPostFileRequest(String url, String jsonPayload, AsyncUDPPacket *packet);
 
 // HTTP configuration functions
 void setHttpMethod(String method, AsyncUDPPacket *packet);

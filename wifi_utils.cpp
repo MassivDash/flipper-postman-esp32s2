@@ -137,3 +137,11 @@ void setPassword(String newPassword) { password = newPassword; }
 const char *getSSID() { return ssid.c_str(); }
 
 const char *getPassword() { return password.c_str(); }
+
+void sendUDPMessage(const char* message, IPAddress remoteIP, uint16_t remotePort) {
+  udp.writeTo((const uint8_t*)message, strlen(message), remoteIP, remotePort);
+}
+
+String getLocalIpString() {
+  return WiFi.localIP().toString();
+}
