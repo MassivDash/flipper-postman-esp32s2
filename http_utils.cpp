@@ -1,20 +1,33 @@
+/**
+ * @file http_utils.cpp
+ * @brief HTTP utility functions and configurations
+ *
+ * This file contains utility functions for handling HTTP requests,
+ * managing HTTP configurations, and processing HTTP responses.
+ */
+
 #include "http_utils.h"
 #include "led.h"
 #include "uart_utils.h"
 #include <HTTPClient.h>
 #include <WiFi.h>
 
+/// Maximum content length for HTTP responses
 const int MAX_CONTENT_LENGTH = 512 * 1024;
 
+/**
+ * @struct HttpCallConfig
+ * @brief Configuration for HTTP calls
+ */
 struct HttpCallConfig {
-  String method;
-  String implementation;
-  String url;
-  std::vector<std::pair<String, String>> headers;
-  String payload;
-  bool showResponseHeaders = false;
+    String method;                                  ///< HTTP method
+    String implementation;                          ///< Implementation type (e.g., "CALL" or "STREAM")
+    String url;                                     ///< URL for the HTTP request
+    std::vector<std::pair<String, String>> headers; ///< HTTP headers
+    String payload;                                 ///< Request payload
+    bool showResponseHeaders;                       ///< Flag to show response headers
 
-  void reset() {
+  void reset() {                                    ///< Reset the configuration
     method = "";
     url = "";
     implementation = "CALL";
@@ -23,7 +36,7 @@ struct HttpCallConfig {
     showResponseHeaders = false;
   }
 
-  void removeHeader(String name) {
+  void removeHeader(String name) {                 ///< Remove a specific header
     headers.erase(std::remove_if(headers.begin(), headers.end(),
                                  [&](const std::pair<String, String> &header) {
                                    return header.first == name;
@@ -32,8 +45,14 @@ struct HttpCallConfig {
   }
 };
 
+/// Global HTTP call configuration
 HttpCallConfig httpCallConfig;
 
+/**
+ * @brief Print response to UART or UDP packet
+ * @param response The response string to print
+ * @param packet Pointer to AsyncUDPPacket, can be null for UART output
+ */
 void printResponse(String response, AsyncUDPPacket *packet) {
   if (response.isEmpty()) {
     response = "empty";
@@ -45,6 +64,11 @@ void printResponse(String response, AsyncUDPPacket *packet) {
   }
 }
 
+/**
+ * @brief Set flag to show response headers
+ * @param show Boolean flag to show or hide headers
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void setShowResponseHeaders(bool show, AsyncUDPPacket *packet) {
   httpCallConfig.showResponseHeaders = show;
   printResponse("HTTP_BUILDER_SHOW_RESPONSE_HEADERS: " +
@@ -52,6 +76,10 @@ void setShowResponseHeaders(bool show, AsyncUDPPacket *packet) {
                 packet);
 }
 
+/**
+ * @brief Get and print current HTTP builder configuration
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void getHttpBuilderConfig(AsyncUDPPacket *packet) {
   printResponse("HTTP_BUILDER_CONFIG: ", packet);
   printResponse("HTTP_METHOD: " + httpCallConfig.method, packet);
@@ -65,6 +93,11 @@ void getHttpBuilderConfig(AsyncUDPPacket *packet) {
   }
 }
 
+/**
+ * @brief Set HTTP method for the request
+ * @param method HTTP method string
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void setHttpMethod(String method, AsyncUDPPacket *packet) {
   if (method != "GET" && method != "POST" && method != "PATCH" &&
       method != "PUT" && method != "DELETE" && method != "HEAD") {
@@ -78,11 +111,22 @@ void setHttpMethod(String method, AsyncUDPPacket *packet) {
   printResponse("HTTP_SET_METHOD: " + method, packet);
 }
 
+/**
+ * @brief Set URL for the HTTP request
+ * @param url URL string
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
+
 void setHttpUrl(String url, AsyncUDPPacket *packet) {
   httpCallConfig.url = ensureHttpsPrefix(url);
   printResponse("HTTP_URL: " + httpCallConfig.url, packet);
 }
 
+/**
+ * @brief Add an HTTP header to the configuration
+ * @param header Header string in "name:value" format
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void addHttpHeader(String header, AsyncUDPPacket *packet) {
   int separatorIndex = header.indexOf(':');
   if (separatorIndex != -1) {
@@ -96,26 +140,50 @@ void addHttpHeader(String header, AsyncUDPPacket *packet) {
   }
 }
 
+/**
+ * @brief Remove an HTTP header from the configuration
+ * @param name Name of the header to remove
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void removeHttpHeader(String name, AsyncUDPPacket *packet) {
   httpCallConfig.removeHeader(name);
   printResponse("HTTP_REMOVE_HEADER: " + name, packet);
 }
 
+/**
+ * @brief Reset the HTTP configuration to default values
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void resetHttpConfig(AsyncUDPPacket *packet) {
   httpCallConfig.reset();
   printResponse("HTTP_CONFIG_REST: All configurations reset", packet);
 }
 
+/**
+ * @brief Set the payload for the HTTP request
+ * @param payload Payload string
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void setHttpPayload(String payload, AsyncUDPPacket *packet) {
   httpCallConfig.payload = payload;
   printResponse("HTTP_SET_PAYLOAD: " + payload, packet);
 }
 
+/**
+ * @brief Set the implementation type for HTTP requests
+ * @param implementation Implementation type string
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void setHttpImplementation(String implementation, AsyncUDPPacket *packet) {
   httpCallConfig.implementation = implementation;
   printResponse("HTTP_SET_IMPLEMENTATION: " + implementation, packet);
 }
 
+/**
+ * @brief Get the content length of a resource at the given URL
+ * @param url URL to check
+ * @return int Content length or -1 if error
+ */
 int getContentLength(String url) {
   HTTPClient http;
   http.begin(url);
@@ -131,6 +199,11 @@ int getContentLength(String url) {
   }
 }
 
+/**
+ * @brief Handle streaming HTTP response
+ * @param http HTTPClient object
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   int len = http.getSize();
   const size_t bufferSize = 512; // Buffer size for reading data
@@ -158,6 +231,11 @@ void handleStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   printResponse("\nSTREAM_END", packet);
 }
 
+/**
+ * @brief Handle file streaming HTTP response
+ * @param http HTTPClient object
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void handleFileStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   int len = http.getSize();
   uint8_t buff[512] = {0};
@@ -177,6 +255,11 @@ void handleFileStreamResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   }
 }
 
+/**
+ * @brief Handle HTTP response as a string
+ * @param http HTTPClient object
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void handleGetStringResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   // Check available heap memory
   size_t freeHeap = ESP.getFreeHeap();
@@ -206,6 +289,11 @@ void handleGetStringResponse(HTTPClient &http, AsyncUDPPacket *packet) {
   printResponse("RESPONSE_END", packet);
 }
 
+/**
+ * @brief Make an HTTP GET request
+ * @param url URL for the request
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void makeHttpRequest(String url, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
     int contentLength = getContentLength(url);
@@ -250,11 +338,18 @@ void makeHttpRequest(String url, AsyncUDPPacket *packet) {
     http.end();
     led_set_blue(0);
   } else {
+    led_set_blue(0);
+    led_error();
     String errorMsg = "HTTP_ERROR: WiFi Disconnected";
     printResponse(errorMsg, packet);
   }
 }
 
+/**
+ * @brief Make an HTTP GET request for file streaming
+ * @param url URL for the request
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void makeHttpFileRequest(String url, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -274,6 +369,11 @@ void makeHttpFileRequest(String url, AsyncUDPPacket *packet) {
   }
 }
 
+/**
+ * @brief Make an HTTP GET request with streaming response
+ * @param url URL for the request
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void makeHttpRequestStream(String url, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -318,14 +418,21 @@ void makeHttpRequestStream(String url, AsyncUDPPacket *packet) {
   } else {
     String errorMsg = "HTTP_ERROR: WiFi Disconnected";
     printResponse(errorMsg, packet);
+    led_set_blue(0);
     led_error();
   }
 }
 
+/**
+ * @brief Make an HTTP POST request
+ * @param url URL for the request
+ * @param jsonPayload JSON payload for the request
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void makeHttpPostRequest(String url, String jsonPayload,
                          AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
-
+    led_set_blue(255);
     HTTPClient http;
     http.begin(url);
     http.addHeader("Content-Type", "application/json");
@@ -339,17 +446,25 @@ void makeHttpPostRequest(String url, String jsonPayload,
     } else {
       String errorMsg = "HTTP_ERROR: " + getHttpErrorMessage(httpResponseCode);
       printResponse(errorMsg, packet);
+      led_set_blue(0);
       led_error();
     }
-
     http.end();
+    led_set_blue(0);
   } else {
     String errorMsg = "HTTP_ERROR: WiFi Disconnected";
     printResponse(errorMsg, packet);
+    led_set_blue(0);
     led_error();
   }
 }
 
+/**
+ * @brief Make an HTTP POST request for file streaming
+ * @param url URL for the request
+ * @param jsonPayload JSON payload for the request
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 void makeHttpPostFileRequest(String url, String jsonPayload, AsyncUDPPacket *packet) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
@@ -368,6 +483,11 @@ void makeHttpPostFileRequest(String url, String jsonPayload, AsyncUDPPacket *pac
     led_set_blue(0);
   }
 }
+
+/**
+ * @brief Execute an HTTP call based on the current configuration
+ * @param packet Pointer to AsyncUDPPacket for response
+ */
 
 void executeHttpCall(AsyncUDPPacket *packet) {
   if (httpCallConfig.url.isEmpty() || httpCallConfig.method.isEmpty()) {
@@ -440,6 +560,7 @@ void executeHttpCall(AsyncUDPPacket *packet) {
     } else {
       String errorMsg = "HTTP_ERROR: " + getHttpErrorMessage(httpResponseCode);
       printResponse(errorMsg, packet);
+      led_set_blue(0);
       led_error();
     }
 
@@ -448,10 +569,17 @@ void executeHttpCall(AsyncUDPPacket *packet) {
     led_set_blue(0);
   } else {
     String errorMsg = "HTTP_ERROR: WiFi Disconnected";
+    led_set_blue(0);
+    led_error();
     printResponse(errorMsg, packet);
   }
 }
 
+/**
+ * @brief Get a human-readable error message for HTTP error codes
+ * @param httpCode HTTP error code
+ * @return String Error message
+ */
 String getHttpErrorMessage(int httpCode) {
   switch (httpCode) {
   case HTTPC_ERROR_CONNECTION_REFUSED:
